@@ -1,0 +1,304 @@
+#!/usr/bin/env perl6
+use v6;
+use App::Prancer::Handler;
+
+#
+# The equivalent of **, *@rest captures the path and puts it into @rest.
+#
+multi GET( '/', @rest ) is handler { return "Everything else, @rest" }
+
+#
+# The equivalent of '*', $value with no constraints matches any value.
+#
+multi GET( '/', $value ) is handler
+	{ return "/$value that's not declared elsewhere" }
+multi GET( '/', Str $slug ) is handler
+	{ return "/$slug is a string that doesn't fall into \$value catchall" }
+multi GET( '/', Int $id ) is handler
+	{ return "/$id is an int that doesn't fall into \$value catchall" }
+
+#multi GET( '/regexp', Regex { foo } ) is handler { }
+multi GET( '/regex', Str $x where { /foo/ } ) is handler { }
+
+#
+# Blog handlers from PearlBee (corrected) in Prancer form
+#
+multi GET( '/' ) is handler { }
+multi sub GET( '/page', Int:D $page ) is handler { }
+multi sub GET( '/post', Str:D $slug ) is handler { }
+multi sub GET( '/post', Int:D $year, Int:D $month, Str:D $slug ) is handler { }
+multi POST( '/comment', '/add', %QUERY ) is handler { }
+
+#
+# Ho ho ho, can we use destructuring bind here?
+#
+# multi POST( '/comment', '/add', [ $fullname, $slug, $secret ] ) is handler { }
+
+multi GET( '/posts/category', Str:D $slug ) is handler { } # Randomly elide '/'
+multi GET( '/posts', '/category', Str:D $slug, '/page', Int:D $page )
+         is handler { }
+multi GET( '/posts/user', Str:D $username ) is handler { } # Randomly elide '/'
+multi GET( '/posts', '/user', Str:D $username, '/page', Int:D $page )
+         is handler { }
+multi GET( '/posts/tag', Str:D $slug ) is handler { } # Randomly elide '/'
+multi GET( '/posts', '/tag', Str:D $slug, '/page', Int:D $page )
+         is handler { }
+multi GET( '/sign-up' ) is handler { }
+multi POST( '/sign-up', %QUERY ) is handler { }
+#
+#
+# multi POST( '/sign-up', [ $username, $email, $first-name, $last-name ] )
+#           is handler { }
+
+multi GET( '/api', '/tags', $format ) is handler { }
+multi GET( '/admin' ) is handler { }
+multi POST( '/login', %QUERY ) is handler { }
+#
+#
+# multi POST( '/login', [ $password, $username ] ) is handler { }
+#
+multi GET( '/logout' ) is handler { }
+
+#
+# Note /author/posts/* and /author/comments/* aren't quite parallel.
+#
+multi GET( '/author', '/posts' ) is handler { }
+multi GET( '/author', '/posts', Str:D $status, '/page', Int:D $page )
+         is handler { }
+multi GET( '/author', '/posts', '/draft', Str:D $slug ) is handler { }
+multi GET( '/author', '/posts', '/edit', Str:D $slug ) is handler { }
+multi GET( '/author', '/posts', '/publish', Str:D $slug ) is handler { }
+multi GET( '/author', '/posts', '/trash', Str:D $slug ) is handler { }
+multi GET( '/author', '/posts', '/update', Str:D $slug ) is handler { }
+multi GET( '/author', '/posts', '/add' ) is handler { }
+
+multi GET( '/author', '/comments' ) is handler { }
+multi GET( '/author', '/comments', '/page', Int:D $page ) is handler { }
+multi GET( '/author', '/comments', Str:D $status, '/page', Int:D $page )
+         is handler { }
+multi GET( '/author', '/comments', '/approve', Str:D $slug ) is handler { }
+multi GET( '/author', '/comments', '/trash', Str:D $slug ) is handler { }
+multi GET( '/author', '/comments', '/spam', Str:D $slug ) is handler { }
+multi GET( '/author', '/comments', '/pending', Str:D $slug ) is handler { }
+
+#
+# Ding ding --- 'redirect' feature?
+#
+# multi redirect( '/admin', '/users' --> '/admin', '/users', '/page', 1 )
+#               is handler { }
+multi GET( '/admin', '/users' ) is handler { } # -> '/admin/users/page/1'
+multi GET( '/admin', '/users', '/page', Int:D $page ) is handler { }
+multi GET( '/admin', '/users', Str:D $status, '/page', Int:D $page )
+         is handler { }
+multi GET( '/admin', '/users', '/activate', Str:D $slug ) is handler { }
+multi GET( '/admin', '/users', '/deactivate', Str:D $slug ) is handler { }
+multi GET( '/admin', '/users', '/suspend', Str:D $slug ) is handler { }
+multi GET( '/admin', '/users', '/allow', Str:D $slug ) is handler { }
+multi GET( '/admin', '/users', '/add', Str:D $slug ) is handler { }
+
+# Another 'redirect' opportunity?
+multi GET( '/admin/tags' ) is handler { }
+multi GET( '/admin/tags', Str:D $slug, '/page', Int:D $page ) is handler { }
+multi GET( '/admin', '/tags', '/delete', Str:D $slug ) is handler { }
+multi GET( '/admin/settings' ) is handler { }
+multi POST( '/admin/settings/save' ) is handler { }
+multi GET( '/admin/settings/import' ) is handler { }
+multi POST( '/admin/settings/wp_import' ) is handler { }
+
+# Redirect --> /admin/posts/$status/page/$page
+multi GET( '/admin/posts' ) is handler { }
+multi GET( '/admin', '/posts', Str:D $status, '/page', Int:D $page )
+         is handler { }
+multi GET( '/admin', '/posts', '/publish', Str:D $slug ) is handler { }
+multi GET( '/admin', '/posts', '/draft', Str:D $slug ) is handler { }
+multi GET( '/admin', '/posts', '/trash', Str:D $slug ) is handler { }
+multi GET( '/admin', '/posts', '/update', Str:D $slug ) is handler { }
+multi GET( '/admin', '/posts', '/edit', Str:D $slug ) is handler { }
+multi GET( '/admin/posts', '/add' ) is handler { }
+
+multi GET( '/admin', '/tags', '/edit', Str:D $slug ) is handler { }
+
+# XXX Coalesce these into 'any'?
+#
+multi GET( '/dashboard' ) is handler { }
+multi POST( '/dashboard' ) is handler { }
+
+# XXX Coalesce these into 'any'?
+#
+multi GET( '/profile' ) is handler { }
+multi POST( '/profile' ) is handler { }
+
+### #`(
+### 
+### $trie = {
+###   GET => {
+###     '(Any)' => $r,
+###     'admin' => {
+###     },
+###     'posts' => {
+###     },
+### )
+### 
+### sub car( @x ) { @x[0] }
+### sub cdr( @x ) { @x[1..*] }
+### 
+### sub insert-routine( $trie, @args, $r )
+### 	{
+### 	my @rest = (cdr @args);
+### 	my $head = (car @args);
+### 
+### 	$trie.{$head} = 1;
+### 
+### #	if @rest
+### #		{
+### #		$trie.{$head} //= {};
+### #		insert-routine( $trie.{$head}, @rest, $r );
+### #		}
+### #	else
+### #		{
+### #		if $trie.{$head}
+### #			{
+### #die "Two handlers wih the same name '$head'";
+### #			}
+### #		else
+### #			{
+### #			$trie.{$head} = $r;
+### #			}
+### #		}
+### 	}
+### 
+### my $sub;
+### #`(
+### multi sub trait_mod:<is>( Routine $r, :$handler! ) is export
+### 	{
+### 	my $info = routine-to-handler( $r );
+### 	return unless $info.<name> ~~
+### 	              <DELETE GET HEAD OPTIONS PATCH POST PUT>.any;
+### $handler-trie.<x> = 1;
+### 
+### 	my @args = ( $info.<name>, $info.<arguments>.flat ).flat;
+### say @args;
+### #	insert-routine( $handler-trie, @args, $r );
+### 	}
+### )
+### 
+### multi GET( '/' ) is handler { };
+### multi GET( '/', $username ) is handler { };
+### multi GET( '/admin' ) is handler { };
+### multi GET( '/posts', Str:D $username ) is handler { };
+### multi GET( '/posts', Int:D $year, Int:D $month, Str:D $slug ) is handler { };
+
+### #`(
+### multi GET( '/admin', '/add-post' ) is handler
+### 	{
+### 	return	200,
+### 		[ 'Content-Type' => 'text/plain' ],
+### 		[ "Add post" ]
+### 	}
+### 
+### multi GET( '/admin/dashboard' ) is handler
+### 	{
+### 	return	200,
+### 		[ 'Content-Type' => 'text/plain' ],
+### 		[ 'Admin dashboard' ]
+### 	}
+### 
+### multi GET( '/logout' ) is handler
+### 	{
+### 	return	200,
+### 		[ 'Content-Type' => 'text/plain' ],
+### 		[ 'Logging out' ]
+### 	}
+### 
+### multi GET( '/login' ) is handler
+### 	{
+### 	return	200,
+### 		[ 'Content-Type' => 'text/plain' ],
+### 		[ 'Login form' ]
+### 	}
+### 
+### multi POST( '/login', $QUERY ) is handler
+### 	{
+### 	return	200,
+### 		[ 'Content-Type' => 'text/plain' ],
+### 		[ "Login for $QUERY.<username> / $QUERY.<password>" ]
+### 	}
+### 
+### multi GET( '/post', Int:D $year, Int:D $month, Str:D $slug ) is handler
+### 	{
+### 	return	200,
+### 		[ 'Content-Type' => 'text/plain' ],
+### 		[ "Post '$slug' on $year/$month" ]
+### 	}
+### 
+### multi GET( '/' ) is handler
+### 	{
+### 	return	200,
+### 		[ 'Content-Type' => 'text/plain' ],
+### 		[ 'User Posts' ]
+### 	}
+### )
+
+### 	my @path = map { "/$_" }, $env<PATH_INFO>.split( '/', :skip-empty );
+### say @path[0];
+### if @path[0] eq '/post'
+### 	{
+### say @path;
+### my @foo := @path;
+### #	return $sub.('/post', 2016, 2, 'my_slug' );
+### #my $x = $sub.assuming(@path.flat);
+### #$x();
+### #	return $sub(@path[0..*]);#|@path);
+### $env<PATH_INFO> ~~ /^\/post\/(\d+)\/(\d+)\/(.+)/;
+### #return $sub(@path[0],+@path[1],+@path[2],@path[3]);
+### return $sub('/post', +$0, +$1, ~$2);
+### 	}
+### else
+### 	{
+### 	given $env<PATH_INFO>
+### 		{
+### 		when '/'
+### 			{ return GET( '/' ) }
+### 		when /\/post/
+### 			{ return GET( '/post', 2016, 2, 'my_post' ) }
+### 		when '/login'
+### 			{
+### 			if $env<REQUEST_METHOD> eq 'GET'
+### 				{ return GET( '/login' ) }
+### 			else
+### 				{
+### 				my $QUERY = { username => 'jgoff', password => '123-qwe' };
+### 				return POST( '/login', $QUERY )
+### 				}
+### 			}
+### 		when '/logout'
+### 			{ return GET( '/logout' ) }
+### 		when '/admin/add-post'
+### 			{ return GET( '/admin', '/add-post' ) }
+### 		}
+### 	}
+
+multi MAIN( 'build-skeleton', Str:D $app-name )
+	{
+say "Building skeleton...";
+	}
+
+multi MAIN( 'run-blog', Str:D $app-name,
+                        Str:D $admin-username,
+                        Str:D $admin-password )
+	{
+say "Building blog...";
+say "Launching blog...";
+	#prance(True);
+	prance;
+	}
+
+multi MAIN( 'run-skeleton', Str:D $app-name,
+                            Str:D $admin-username,
+                            Str:D $admin-password )
+	{
+say "Building skeleton...";
+say "Launching skeleton...";
+	}
+
+# vim: ft=perl6

@@ -1,0 +1,8 @@
+*.swp
+*.swo
+lib/precomp
+Makefile
+Makefile.old
+MANIFEST.bak
+META.yml
+MYMETA.yml

@@ -1,0 +1,32 @@
+{
+	"name"          : "App-prancer",
+	"tags"          : [
+		"web",
+		"framework",
+		"PSGI",
+		"P6SGI"
+	],
+	"authors"       : [
+		"Jeffrey Goff <drforr@pobox.com>"
+	],
+	"author"        : "Jeffrey Goff <drforr@pobox.com>",
+	"auth"          : "github:drforr",
+	"support"       : {
+		"source"  : "git://github.com/drforr/perl6-App-prancer.git"
+	},
+	"source-url"    : "git://github.com/drforr/perl6-App-prancer.git",
+	"perl"          : "6",
+	"build-depends" : [
+		"panda"
+	],
+	"provides"      : {
+		"Prancer"	: "lib/Prancer.pm"
+	},
+	"depends"       : [ ],
+	"test-depends"  : [
+		"Test"
+	],
+	"description"   : "Minimalist web framework",
+
+	"version"       : "0.0.2"
+}
