@@ -115,35 +115,10 @@ handle the return codes, that's an eventual improvement.
 
 =end pod
 
-#`(
-[ERROR] [8272] [5] HTTP_ACCEPT  text/html,application/xhtml+xml,application/xml;
-q=0.9,*/*;q=0.8
-HTTP_ACCEPT_ENCODING    gzip, deflate
-HTTP_ACCEPT_LANGUAGE    en-US,en;q=0.5
-HTTP_CACHE_CONTROL      max-age=0
-HTTP_CONNECTION keep-alive
-HTTP_HOST       127.0.0.1:5000
-HTTP_USER_AGENT Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:38.0) Gecko/20100101 
-Firefox/38.0
-PATH_INFO       /
-QUERY_STRING
-REQUEST_METHOD  GET
-REQUEST_URI     /
-SCRIPT_NAME
-SERVER_NAME     127.0.0.1
-SERVER_PORT     5000
-SERVER_PROTOCOL HTTP/1.1
-p6sgi.errors    <STDERR>
-p6sgi.input
-p6sgi.url-scheme        http
-p6sgix.io       IO::Socket::Async<139621116757968>   in method throw at gen/moar
-/m-CORE.setting line 20061
-)
-
 class App::Prancer::Handler
 	{
 	has Bool $!trace = False;
-	has Str  $!static-directory = 'static/';
+	has Str  $!static-directory = 'static';
 
 	use Crust::Runner;
 
@@ -246,8 +221,7 @@ return $x ?? 200 !! 'C03'
 					$path-element = $constraint;
 					last;
 					}
-				my @path = $path-element.split( '/', :skip-empty );
-				@args.append( @path );
+				@args.append( $path-element );
 				}
 			}
 		@args = ( Nil ) if !@args;
@@ -260,37 +234,65 @@ return $x ?? 200 !! 'C03'
 			}
 		}
 
-	my $trie = {};
 	my %handler =
 		(
-		DELETE  => [ ],
-		GET     => [ ],
-		HEAD    => [ ],
-		OPTIONS => [ ],
-		PATCH   => [ ],
-		POST    => [ ],
-		PUT     => [ ],
+		DELETE  => { },
+		GET     => { },
+		HEAD    => { },
+		OPTIONS => { },
+		PATCH   => { },
+		POST    => { },
+		PUT     => { },
 		);
-
-#`( Ignoring regex, Int and Str for the moment:
-
-GET / HTML/1.1 OK
-GET /post HTML/1.1 OK
-GET /post/2016/02/my_post HTML/1.1 OK
-
-)
-
-	sub insert-routine( @args, $r )
-		{
-		$trie.{@args[0]} = $r;
-		}
 
 	multi sub trait_mod:<is>( Routine $r, :$handler! ) is export
 		{
-		$trie.<x> = 1;
 		my $info = routine-to-handler( $r );
 		return unless $info.<name> ~~
 			      <DELETE GET HEAD OPTIONS PATCH POST PUT>.any;
+return if @( $info.<arguments> ) != 1;
+return if $info.<name> ne 'GET';
+## For the moment, sort into literals and one string-ish handler
+
+if $info.<arguments>.[0] ~~ Str
+	{
+	%handler<GET><literal>{ $info.<arguments>.[0] } = $r;
+	say "Loading route '$info.<arguments>.[0]'";
+	}
+else
+	{
+	%handler<GET><string> = $r;
+	say "Loading route '/Str \$x'";
+	}
+
+		}
+
+	sub MIME-type( $filename )
+		{
+		return 'text/plain' unless $filename ~~ / \.( .+ ) $/;
+		my %MIME-type =
+			(
+			'html'  => 'text/html',
+			'htm'   => 'text/html',
+			'xhtml' => 'text/html',
+			'jpg'	=> 'image/jpeg',
+			'png'	=> 'image/png',
+			);
+		return %MIME-type{$0} if %MIME-type{$0};
+		return 'text/plain';
+		}
+
+	sub serve-static( Str $static-directory, $env )
+		{
+		my $file = $static-directory ~ $env.<PATH_INFO>;
+		$env.<PATH_INFO> ~~ / \.( .+ ) $/;
+		my $MIME-type = MIME-type( $file );
+		if $file.IO.e
+			{
+			return 200,
+				[ 'Content-Type' => $MIME-type ],
+				[ $file.IO.slurp ]
+			}
 		}
 
 constant MAX-ITERATIONS = 10;
@@ -299,24 +301,44 @@ constant MAX-ITERATIONS = 10;
 		my $trace-on = $!trace;
 		return sub ( $env )
 			{
-my $state = 'B13';
+			my $static = serve-static( $!static-directory, $env );
+			return $static if $static;
+
+			my $state = 'B13';
 my $iterations = MAX-ITERATIONS;
-while $state !~~ Int
-	{
-say $state;
-unless %.state-machine{$state}
-	{
-say "Fell off end of state machine!";
-last;
-	}
-	$state = %.state-machine{$state}.( self, $env );
+			while $state !~~ Int
+				{
+#say $state;
+				unless %.state-machine{$state}
+					{
+			say "Fell off end of state machine!";
+			last;
+					}
+				$state = %.state-machine{$state}.( self, $env );
 last if $iterations-- <= 0;
-	}
-say $state;
+				}
+say "Ended in state $state";
 say "Tracing" if $trace-on;
+
+			my @path = ( $env.<PATH_INFO> );
+			my $content;
+
+			if @path and %handler<GET><literal>{@path[0]}
+				{
+				$content = %handler<GET><literal>{@path[0]}(|@path);
+				}
+			elsif @path and %handler<GET><string>
+				{
+				$content = %handler<GET><string>(|@path);
+				}
+			else
+				{
+				$content = 'Fallback';
+				}
+
 			return	200,
 				[ 'Content-Type' => 'text/plain' ],
-				[ "Fallback" ]
+				[ $content ];
 			}
 		}
 
@@ -330,17 +352,11 @@ say "Tracing" if $trace-on;
 
 	method display-routes()
 		{
-		for my $trie.keys -> $key
-			{
-			}
 		}
 
 	sub prance( :$trace = False, :$verbose = False ) is export
 		{
 		my $app = App::Prancer::Handler.new;
-#		$app.display-routes if $verbose;
-say $trie if $verbose;
-say $trie;
 		$app.prance( $trace );
 		}
 	}
