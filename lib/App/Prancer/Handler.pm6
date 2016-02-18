@@ -115,164 +115,15 @@ handle the return codes, that's an eventual improvement.
 
 =end pod
 
+use App::Prancer::StateMachine;
+
 class App::Prancer::Handler
 	{
 	has Bool $!trace = False;
 	has Str  $!static-directory = 'static';
 
 	use Crust::Runner;
-
-	has Bool $.available = False;
-
-	sub B13-available( $machine, $r )
-		{
-		return $machine.available ?? 'B12' !! 503
-		}
-	sub B12-known-method( $machine, $r )
-		{
-		return ($r.<REQUEST_METHOD> ~~
-			  <DELETE GET HEAD OPTIONS PATCH POST PUT>.any)
-			  ?? 'B11' !! 501
-		}
-	constant QUERY-LENGTH-LIMIT = 1024;
-	sub B11-uri-too-long( $machine, $r )
-		{
-		return $r.<QUERY_STRING>.chars > QUERY-LENGTH-LIMIT
-			?? 414 !! 'B10'
-		}
-	sub B10-method-allowed-on-resource( $machine, $r )
-		{
-my $x = True;
-return $x ?? 'B09' !! 405
-		}
-	sub B09-malformed( $machine, $r )
-		{
-my $x = False;
-return $x ?? 400 !! 'B08'
-		}
-	sub B08-authorized( $machine, $r )
-		{
-my $x = True;
-return $x ?? 'B07' !! 401
-		}
-	sub B07-forbidden( $machine, $r )
-		{
-my $x = True;
-return $x ?? 'B07' !! 401
-		}
-	sub B06-unsupported-content-header( $machine, $r )
-		{
-my $x = False;
-return $x ?? 501 !! 'B05'
-		}
-	sub B05-unknown-content-type( $machine, $r )
-		{
-my $x = True;
-return $x ?? 'B07' !! 401
-		}
-	sub B04-request-entity-too-large( $machine, $r )
-		{
-my $x = False;
-return $x ?? 413 !! 'B03'
-		}
-	sub B03-OPTIONS( $machine, $r )
-		{
-my $x = False;
-return $x ?? 200 !! 'C03'
-		}
-	sub C03-Accept-exists( $machine, $r )
-		{
-my $x = True;
-return $x ?? 'C04' !! 'D04'
-		}
-	sub C04-Aceptable-media-type-available( $machine, $r )
-		{
-my $x = True;
-return $x ?? 'C04' !! 406
-		}
-	sub D04-Accept-Language-exists( $machine, $r )
-		{
-my $x = True;
-return $x ?? 'D05' !! 'E05'
-		}
-	sub D05-Acceptable-language-available( $machine, $r )
-		{
-my $x = True;
-return $x ?? 'E05' !! 406
-		}
-	sub E05-Accept-Charset-exists( $machine, $r )
-		{
-my $x = True;
-return $x ?? 'E06' !! 'F06'
-		}
-	sub E06-Acceptable-charset-available( $machine, $r )
-		{
-my $x = True;
-return $x ?? 'F06' !! 406
-		}
-	sub F06-Accept-Encoding-exists( $machine, $r )
-		{
-my $x = True;
-return $x ?? 'F07' !! 'G07'
-		}
-	sub F07-Acceptable-encoding-available( $machine, $r )
-		{
-my $x = True;
-return $x ?? 'G07' !! 406
-		}
-	sub G07-Resource-exists( $machine, $r )
-		{
-my $x = True;
-return $x ?? 'G08' !! 'H07'
-		}
-	sub G08-If-Match-exists( $machine, $r )
-		{
-my $x = True;
-return $x ?? 'G09' !! 'H10'
-		}
-	sub G09-If-Match-star-exists( $machine, $r )
-		{
-my $x = True;
-return $x ?? 'G11' !! 'H10'
-		}
-	sub G11-Etag-in-If-Match( $machine, $r )
-		{
-my $x = True;
-return $x ?? 'H10' !! 412
-		}
-	sub H07-If-Match-star-exists( $machine, $r )
-		{
-my $x = True;
-return $x ?? 'G11' !! 'H10'
-		}
-
-	has %.state-machine =
-		(
-		B13 => &B13-available,				# B13-> B12, 503
-		B12 => &B12-known-method,			# B12-> B11, 501
-		B11 => &B11-uri-too-long,			# B11-> 414, B10
-		B10 => &B10-method-allowed-on-resource,		# B10-> B09, 405
-		B09 => &B09-malformed,				# B09-> 400, B08
-		B08 => &B08-authorized,				# B08-> B07, 401
-		B07 => &B07-forbidden,				# B07-> 403, B06
-		B06 => &B06-unsupported-content-header,		# B06-> 501, B05
-		B05 => &B05-unknown-content-type,		# B05-> 415, B04
-		B04 => &B04-request-entity-too-large,		# B04-> 413, B03
-		B03 => &B03-OPTIONS,				# B03-> 200, C03
-		C03 => &C03-Accept-exists,			# C03-> C04, D04
-		C04 => &C04-Aceptable-media-type-available,	# C04-> D04, 406
-		D04 => &D04-Accept-Language-exists,		# D04-> D05, E05
-		D05 => &D05-Acceptable-language-available,	# D05-> E05, 406
-		E05 => &E05-Accept-Charset-exists,		# E05-> E06, F06
-		E06 => &E06-Acceptable-charset-available,	# E06-> F06, 406
-		F06 => &F06-Accept-Encoding-exists,		# F06-> F07, G07
-		F07 => &F07-Acceptable-encoding-available,	# F07-> G07, 406
-		G07 => &G07-Resource-exists,			# G07-> G08, H07
-		G08 => &G08-If-Match-exists,			# G08-> G09, H10
-		G09 => &G09-If-Match-star-exists,		# G09-> G11, H10
-		G11 => &G11-Etag-in-If-Match,			# G11-> H10, 412
-		H07 => &H07-If-Match-star-exists,		# H07-> 412, I07
-		);
+	my $state-machine = App::Prancer::StateMachine.new;
 
 	sub routine-to-handler( Routine $r )
 		{
@@ -323,11 +174,43 @@ return $x ?? 'G11' !! 'H10'
 		PUT     => { },
 		);
 
+	my $GET = { };
+
+	sub insert-into-trie( $t, @path, $r )
+		{
+		my $head = @path[0];
+		my @rest = @path[1..*];
+		# Hrm, 'my ( $head | @rest ) = @path;' would be nice here.
+
+		if $t.{$head}.defined
+			{
+			if $t.{$head} ~~ Sub
+				{
+				my $v = $t.{$head};
+				$t.{$head} = { '' => $r };
+				insert-into-trie( $t.{$head}, @rest, $r )
+				}
+			else
+				{
+				insert-into-trie( $t.{$head}, @rest, $r )
+				}
+			}
+		else
+			{
+			$t.{$head} = $r
+			}
+		}
+
 	multi sub trait_mod:<is>( Routine $r, :$handler! ) is export
 		{
 		my $info = routine-to-handler( $r );
 		return unless $info.<name> ~~
 			      <DELETE GET HEAD OPTIONS PATCH POST PUT>.any;
+
+my @wildcard = map { $_ ~~ Str ?? $_ !! '*' }, @( $info.<arguments> );
+#say @wildcard;
+insert-into-trie( $GET, @wildcard, $r );
+
 return if @( $info.<arguments> ) != 1;
 return if $info.<name> ne 'GET';
 ## For the moment, sort into literals and one string-ish handler
@@ -365,7 +248,7 @@ else
 		my $file = $static-directory ~ $env.<PATH_INFO>;
 		$env.<PATH_INFO> ~~ / \.( .+ ) $/;
 		my $MIME-type = MIME-type( $file );
-		if $file.IO.e
+		if $file.IO.e and not $file.IO.d
 			{
 			return 200,
 				[ 'Content-Type' => $MIME-type ],
@@ -373,33 +256,19 @@ else
 			}
 		}
 
-constant MAX-ITERATIONS = 10;
 	method make-app()
 		{
+display-trie($GET, '');
 		my $trace-on = $!trace;
 		return sub ( $env )
 			{
 			my $static = serve-static( $!static-directory, $env );
 			return $static if $static;
 
-			my $state = 'B13';
-my $iterations = MAX-ITERATIONS;
-			while $state !~~ Int
-				{
-#say $state;
-				unless %.state-machine{$state}
-					{
-			say "Fell off end of state machine!";
-			last;
-					}
-				$state = %.state-machine{$state}.( self, $env );
-last if $iterations-- <= 0;
-				}
-say "Ended in state $state";
-say "Tracing" if $trace-on;
+			my $return-code = $state-machine.run( $env );
 
 			my @path = ( $env.<PATH_INFO> );
-			my $content;
+			my $content = "DEFAULT";
 
 			if @path and %handler<GET><literal>{@path[0]}
 				{
@@ -424,12 +293,22 @@ say "Tracing" if $trace-on;
 		{
 		$!trace = $trace;
 		my $runner = Crust::Runner.new;
-		$!available = True;
 		$runner.run( self.make-app );
 		}
 
-	method display-routes()
+	sub display-trie( $trie, $prefix ) returns Str
 		{
+		for $trie.keys.sort -> $key
+			{
+			if $trie.{$key} ~~ Sub
+				{
+				say "Path $prefix $key";
+				}
+			else
+				{
+				display-trie( $trie.{$key}, $prefix ~ $key );
+				}
+			}
 		}
 
 	sub prance( :$trace = False, :$verbose = False ) is export
