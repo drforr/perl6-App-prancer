@@ -184,20 +184,11 @@ class App::Prancer::Handler
 
 		if $t.{$head}.defined
 			{
-			if $t.{$head} ~~ Sub
-				{
-				my $v = $t.{$head};
-				$t.{$head} = { '' => $r };
-				insert-into-trie( $t.{$head}, @rest, $r )
-				}
-			else
-				{
-				insert-into-trie( $t.{$head}, @rest, $r )
-				}
+			insert-into-trie( $t.{$head}, @rest, $r )
 			}
 		else
 			{
-			$t.{$head} = $r
+			$t.{$head} = { '!' => $r }
 			}
 		}
 
@@ -256,9 +247,27 @@ else
 			}
 		}
 
+	sub find-in-trie( $t, @path )
+		{
+		my $head = @path[0];
+		my @rest = @path[1..*];
+		# Hrm, 'my ( $head | @rest ) = @path;' would be nice here.
+
+if $t{$head}{'!'}
+	{
+	return $t{$head}{'!'};
+	}
+elsif $t{'*'}{'!'}
+	{
+	return $t{'*'}{'!'};
+	}
+
+		}
+
 	method make-app()
 		{
 display-trie($GET, '');
+#say $GET.keys;
 		my $trace-on = $!trace;
 		return sub ( $env )
 			{
@@ -270,17 +279,10 @@ display-trie($GET, '');
 			my @path = ( $env.<PATH_INFO> );
 			my $content = "DEFAULT";
 
-			if @path and %handler<GET><literal>{@path[0]}
+			my $r = find-in-trie( $GET, @path );
+			if $r
 				{
-				$content = %handler<GET><literal>{@path[0]}(|@path);
-				}
-			elsif @path and %handler<GET><string>
-				{
-				$content = %handler<GET><string>(|@path);
-				}
-			else
-				{
-				$content = 'Fallback';
+				$content = $r(|@path);
 				}
 
 			return	200,
