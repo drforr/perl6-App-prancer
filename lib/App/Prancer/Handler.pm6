@@ -198,25 +198,10 @@ class App::Prancer::Handler
 		return unless $info.<name> ~~
 			      <DELETE GET HEAD OPTIONS PATCH POST PUT>.any;
 
-my @wildcard = map { $_ ~~ Str ?? $_ !! '*' }, @( $info.<arguments> );
-#say @wildcard;
-insert-into-trie( $GET, @wildcard, $r );
-
-return if @( $info.<arguments> ) != 1;
-return if $info.<name> ne 'GET';
-## For the moment, sort into literals and one string-ish handler
-
-if $info.<arguments>.[0] ~~ Str
-	{
-	%handler<GET><literal>{ $info.<arguments>.[0] } = $r;
-	say "Loading route '$info.<arguments>.[0]'";
-	}
-else
-	{
-	%handler<GET><string> = $r;
-	say "Loading route '/Str \$x'";
-	}
-
+		my @wildcard =
+			map { $_ ~~ Str ?? $_ !! '*' },
+			@( $info.<arguments> );
+		insert-into-trie( $GET, @wildcard, $r );
 		}
 
 	sub MIME-type( $filename )
@@ -252,28 +237,34 @@ else
 		my $head = @path[0];
 		my @rest = @path[1..*];
 		# Hrm, 'my ( $head | @rest ) = @path;' would be nice here.
-say "On $head";
 
 if @rest and $t{$head}{@rest[0]}
 	{
-say "seraching";
-	return find-in-trie( $t{$head}, @rest );
-	}
-elsif $t{$head}{'!'}
-	{
-	return $t{$head}{'!'};
-	}
-elsif $t{'*'}{'!'}
-	{
-	return $t{'*'}{'!'};
+	my $rv = find-in-trie( $t{$head}, @rest );
+	return $rv if $rv;
 	}
 
+elsif @rest and $t{'*'}{@rest[0]}
+	{
+	my $rv = find-in-trie( $t{'*'}, @rest );
+	return $rv if $rv;
+	}
+
+		if $t{$head}{'!'}
+			{
+			return $t{$head}{'!'};
+			}
+		elsif $t{'*'}{'!'}
+			{
+			return $t{'*'}{'!'};
+			}
+		return;
 		}
 
 	method make-app()
 		{
-display-trie($GET, '');
-#say $GET.keys;
+		display-trie($GET, '');# if $!trace;
+
 		my $trace-on = $!trace;
 		return sub ( $env )
 			{
@@ -315,7 +306,7 @@ display-trie($GET, '');
 				}
 			else
 				{
-				display-trie( $trie.{$key}, $prefix ~ $key );
+				display-trie( $trie.{$key}, $prefix ~ ' ' ~ $key );
 				}
 			}
 		}

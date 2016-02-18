@@ -5,7 +5,18 @@ use Crust::Test;
 use App::Prancer::Handler;
 
 plan 1;
-my @result; multi GET( '/' ) is handler { '/' }
+
+#Path  * !              # Str $three
+#Path  * * !            # Str $blue Str $fish
+#Path  * /fish !        # Str $red '/fish'
+#Path  / !              # '/'
+#Path  /one !           # '/one'
+#Path  /one /fish !     # '/one' '/fish'
+#Path  /two !           # '/two'
+#Path  /two * !         # '/two' Str $fish
+
+
+multi GET( '/' ) is handler { '/' }
 multi GET( '/one' ) is handler { '/one' }
 multi GET( '/two' ) is handler { '/two' }
 multi GET( Str $three ) is handler { '/$three' }
@@ -25,24 +36,45 @@ sub content-from( $cb, $method, $URL )
 	return $res.content.decode;
 	}
 
+#`(
+
+'/':
+'/one':
+'/two':
+'/three':
+'/one/fish':
+'/two/fish':
+'/red/fish': 
+'/blue/fish': 
+
+)
+
 test-psgi
 	client => -> $cb
 		{
+
 		is content-from( $cb, 'GET', "http://localhost/" ),
 		   '/', '/';
+
 		is content-from( $cb, 'GET', "http://localhost/one" ),
 		   '/one', '/one';
+
 		is content-from( $cb, 'GET', "http://localhost/two" ),
 		   '/two', '/two';
+
 		is content-from( $cb, 'GET', "http://localhost/three" ),
 		   '/$three', '/$three';
+
 		is content-from( $cb, 'GET', "http://localhost/one/fish" ),
 		   '/one/fish', '/one/fish';
+
 		is content-from( $cb, 'GET', "http://localhost/two/fish" ),
 		   '/two/$fish', '/two/$fish';
+
 		is content-from( $cb, 'GET', "http://localhost/red/fish" ),
 		   '/$red/fish', '/$red/fish';
-		is content-from( $cb, 'GET', "http://localhost/blue/fish" ),
+
+		is content-from( $cb, 'GET', "http://localhost/blue/turtle" ),
 		   '/$blue/$fish', '/$blue/$fish';
 		},
 	app => $p.make-app;
