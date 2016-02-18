@@ -4,6 +4,6 @@ use Test;
 
 plan 1;
 
-use Readline;
+use Prancer::Handler;
 
-ok 1, "'use Readline' worked!";
+ok 1, "'use Prancer::Handler' worked!";
