@@ -124,76 +124,154 @@ class App::Prancer::Handler
 
 	has Bool $.available = False;
 
-	sub M-available( $machine, $r )
+	sub B13-available( $machine, $r )
 		{
 		return $machine.available ?? 'B12' !! 503
 		}
-	sub M-known-method( $machine, $r )
+	sub B12-known-method( $machine, $r )
 		{
 		return ($r.<REQUEST_METHOD> ~~
 			  <DELETE GET HEAD OPTIONS PATCH POST PUT>.any)
 			  ?? 'B11' !! 501
 		}
 	constant QUERY-LENGTH-LIMIT = 1024;
-	sub M-uri-too-long( $machine, $r )
+	sub B11-uri-too-long( $machine, $r )
 		{
 		return $r.<QUERY_STRING>.chars > QUERY-LENGTH-LIMIT
 			?? 414 !! 'B10'
 		}
-	sub M-method-allowed-on-resource( $machine, $r )
+	sub B10-method-allowed-on-resource( $machine, $r )
 		{
 my $x = True;
 return $x ?? 'B09' !! 405
 		}
-	sub M-malformed( $machine, $r )
+	sub B09-malformed( $machine, $r )
 		{
 my $x = False;
 return $x ?? 400 !! 'B08'
 		}
-	sub M-authorized( $machine, $r )
+	sub B08-authorized( $machine, $r )
 		{
 my $x = True;
 return $x ?? 'B07' !! 401
 		}
-	sub M-forbidden( $machine, $r )
+	sub B07-forbidden( $machine, $r )
 		{
 my $x = True;
 return $x ?? 'B07' !! 401
 		}
-	sub M-unsupported-content-header( $machine, $r )
+	sub B06-unsupported-content-header( $machine, $r )
 		{
 my $x = False;
 return $x ?? 501 !! 'B05'
 		}
-	sub M-unknown-content-type( $machine, $r )
+	sub B05-unknown-content-type( $machine, $r )
 		{
 my $x = True;
 return $x ?? 'B07' !! 401
 		}
-	sub M-request-entity-too-large( $machine, $r )
+	sub B04-request-entity-too-large( $machine, $r )
 		{
 my $x = False;
 return $x ?? 413 !! 'B03'
 		}
-	sub M-OPTIONS( $machine, $r )
+	sub B03-OPTIONS( $machine, $r )
 		{
 my $x = False;
 return $x ?? 200 !! 'C03'
 		}
+	sub C03-Accept-exists( $machine, $r )
+		{
+my $x = True;
+return $x ?? 'C04' !! 'D04'
+		}
+	sub C04-Aceptable-media-type-available( $machine, $r )
+		{
+my $x = True;
+return $x ?? 'C04' !! 406
+		}
+	sub D04-Accept-Language-exists( $machine, $r )
+		{
+my $x = True;
+return $x ?? 'D05' !! 'E05'
+		}
+	sub D05-Acceptable-language-available( $machine, $r )
+		{
+my $x = True;
+return $x ?? 'E05' !! 406
+		}
+	sub E05-Accept-Charset-exists( $machine, $r )
+		{
+my $x = True;
+return $x ?? 'E06' !! 'F06'
+		}
+	sub E06-Acceptable-charset-available( $machine, $r )
+		{
+my $x = True;
+return $x ?? 'F06' !! 406
+		}
+	sub F06-Accept-Encoding-exists( $machine, $r )
+		{
+my $x = True;
+return $x ?? 'F07' !! 'G07'
+		}
+	sub F07-Acceptable-encoding-available( $machine, $r )
+		{
+my $x = True;
+return $x ?? 'G07' !! 406
+		}
+	sub G07-Resource-exists( $machine, $r )
+		{
+my $x = True;
+return $x ?? 'G08' !! 'H07'
+		}
+	sub G08-If-Match-exists( $machine, $r )
+		{
+my $x = True;
+return $x ?? 'G09' !! 'H10'
+		}
+	sub G09-If-Match-star-exists( $machine, $r )
+		{
+my $x = True;
+return $x ?? 'G11' !! 'H10'
+		}
+	sub G11-Etag-in-If-Match( $machine, $r )
+		{
+my $x = True;
+return $x ?? 'H10' !! 412
+		}
+	sub H07-If-Match-star-exists( $machine, $r )
+		{
+my $x = True;
+return $x ?? 'G11' !! 'H10'
+		}
 
 	has %.state-machine =
 		(
-		B13 => &M-available,			# B13 -> B12 or 503
-		B12 => &M-known-method,			# B12 -> B11 or 501
-		B11 => &M-uri-too-long,			# B11 -> 414 or B10
-		B10 => &M-method-allowed-on-resource,	# B10 -> B09 or 405
-		B09 => &M-malformed,			# B09 -> 400 or B08
-		B08 => &M-authorized,			# B08 -> B07 or 401
-		B07 => &M-forbidden,			# B07 -> 403 or B06
-		B06 => &M-unsupported-content-header,	# B06 -> 501 or B05
-		B05 => &M-unknown-content-type,		# B05 -> 415 or B04
-		B04 => &M-request-entity-too-large,	# B04 -> 413 or B03
-		B03 => &M-OPTIONS,			# B03 -> 200 or C03
+		B13 => &B13-available,				# B13-> B12, 503
+		B12 => &B12-known-method,			# B12-> B11, 501
+		B11 => &B11-uri-too-long,			# B11-> 414, B10
+		B10 => &B10-method-allowed-on-resource,		# B10-> B09, 405
+		B09 => &B09-malformed,				# B09-> 400, B08
+		B08 => &B08-authorized,				# B08-> B07, 401
+		B07 => &B07-forbidden,				# B07-> 403, B06
+		B06 => &B06-unsupported-content-header,		# B06-> 501, B05
+		B05 => &B05-unknown-content-type,		# B05-> 415, B04
+		B04 => &B04-request-entity-too-large,		# B04-> 413, B03
+		B03 => &B03-OPTIONS,				# B03-> 200, C03
+		C03 => &C03-Accept-exists,			# C03-> C04, D04
+		C04 => &C04-Aceptable-media-type-available,	# C04-> D04, 406
+		D04 => &D04-Accept-Language-exists,		# D04-> D05, E05
+		D05 => &D05-Acceptable-language-available,	# D05-> E05, 406
+		E05 => &E05-Accept-Charset-exists,		# E05-> E06, F06
+		E06 => &E06-Acceptable-charset-available,	# E06-> F06, 406
+		F06 => &F06-Accept-Encoding-exists,		# F06-> F07, G07
+		F07 => &F07-Acceptable-encoding-available,	# F07-> G07, 406
+		G07 => &G07-Resource-exists,			# G07-> G08, H07
+		G08 => &G08-If-Match-exists,			# G08-> G09, H10
+		G09 => &G09-If-Match-star-exists,		# G09-> G11, H10
+		G11 => &G11-Etag-in-If-Match,			# G11-> H10, 412
+		H07 => &H07-If-Match-star-exists,		# H07-> 412, I07
 		);
 
 	sub routine-to-handler( Routine $r )
