@@ -252,8 +252,14 @@ else
 		my $head = @path[0];
 		my @rest = @path[1..*];
 		# Hrm, 'my ( $head | @rest ) = @path;' would be nice here.
+say "On $head";
 
-if $t{$head}{'!'}
+if @rest and $t{$head}{@rest[0]}
+	{
+say "seraching";
+	return find-in-trie( $t{$head}, @rest );
+	}
+elsif $t{$head}{'!'}
 	{
 	return $t{$head}{'!'};
 	}
@@ -276,14 +282,15 @@ display-trie($GET, '');
 
 			my $return-code = $state-machine.run( $env );
 
-			my @path = ( $env.<PATH_INFO> );
+			my $path = $env.<PATH_INFO>;
+			my @path = 
+				map { "/$_" },
+				$path.split( '/', :skip-empty );
+			@path = ( '/' ) unless @path;
 			my $content = "DEFAULT";
 
 			my $r = find-in-trie( $GET, @path );
-			if $r
-				{
-				$content = $r(|@path);
-				}
+			$content = $r(|@path) if $r;
 
 			return	200,
 				[ 'Content-Type' => 'text/plain' ],
