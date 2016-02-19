@@ -234,30 +234,7 @@ class App::Prancer::Handler
 
 	sub find-in-trie( $t, @path )
 		{
-		my $head = @path[0];
-		my @rest = @path[1..*];
-		# Hrm, 'my ( $head | @rest ) = @path;' would be nice here.
 
-if @rest and $t{$head}{@rest[0]}
-	{
-	my $rv = find-in-trie( $t{$head}, @rest );
-	return $rv if $rv;
-	}
-
-elsif @rest and $t{'*'}{@rest[0]}
-	{
-	my $rv = find-in-trie( $t{'*'}, @rest );
-	return $rv if $rv;
-	}
-
-		if $t{$head}{'!'}
-			{
-			return $t{$head}{'!'};
-			}
-		elsif $t{'*'}{'!'}
-			{
-			return $t{'*'}{'!'};
-			}
 		return;
 		}
 
@@ -277,10 +254,48 @@ elsif @rest and $t{'*'}{@rest[0]}
 			my @path = 
 				map { "/$_" },
 				$path.split( '/', :skip-empty );
-			@path = ( '/' ) unless @path;
 			my $content = "DEFAULT";
 
-			my $r = find-in-trie( $GET, @path );
+			my $r;
+
+if @path.elems == 3
+	{
+	my $temp0 = $GET;
+	my $temp1;
+	my $temp2;
+
+	if $temp0{@path[0]} { $temp1 = $temp0{@path[0]} }
+	elsif $temp0{'*'}   { $temp1 = $temp0{'*'} }
+
+	if $temp1{@path[1]} { $temp2 = $temp1{@path[1]} }
+	elsif $temp1{'*'}   { $temp2 = $temp1{'*'} }
+
+	if $temp2{@path[2]} { $r = $temp2{@path[2]}{'!'} }
+	elsif $temp2{'*'}   { $r = $temp2{'*'}{'!'} }
+	}
+elsif @path.elems == 2
+	{
+	my $temp0 = $GET;
+	my $temp1;
+
+	if $temp0{@path[0]} { $temp1 = $temp0{@path[0]} }
+	elsif $temp0{'*'}   { $temp1 = $temp0{'*'} }
+
+	if $temp1{@path[1]} { $r = $temp1{@path[1]}{'!'} }
+	elsif $temp1{'*'}   { $r = $temp1{'*'}{'!'} }
+	}
+elsif @path.elems == 1
+	{
+	my $temp0 = $GET;
+
+	if $temp0{@path[0]} { $r = $temp0{@path[0]}{'!'} }
+	elsif $temp0{'*'}   { $r = $temp0{'*'}{'!'} }
+	}
+elsif @path.elems == 0
+	{
+	if $GET{'/'} { $r = $GET{''}{'!'} }
+	}
+
 			$content = $r(|@path) if $r;
 
 			return	200,
