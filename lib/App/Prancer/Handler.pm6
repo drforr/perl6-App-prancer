@@ -173,8 +173,6 @@ class App::Prancer::Handler
 		PUT     => { },
 		);
 
-	my $GET = { };
-
 	sub insert-into-trie( $t, @path, $r )
 		{
 		my $head = @path[0];
@@ -193,8 +191,9 @@ class App::Prancer::Handler
 
 	multi sub trait_mod:<is>( Routine $r, :$handler! ) is export
 		{
-		my $info = routine-to-handler( $r );
-		return unless $info.<name> ~~
+		my $info   = routine-to-handler( $r );
+		my $method = $info.<name>;
+		return unless $method ~~
 			      <DELETE GET HEAD OPTIONS PATCH POST PUT>.any;
 
 		my @wildcard =
@@ -202,11 +201,11 @@ class App::Prancer::Handler
 			@( $info.<arguments> );
 		if @wildcard.elems
 			{
-			insert-into-trie( $GET, @wildcard, $r );
+			insert-into-trie( %handler{$method}, @wildcard, $r );
 			}
 		else
 			{
-			$GET{'!'} = $r;
+			%handler{$method}{'!'} = $r;
 			}
 		}
 
@@ -238,24 +237,18 @@ class App::Prancer::Handler
 			}
 		}
 
-	sub _next-layer( $trie, $path-element )
-		{
-		my $next;
-
-		if $trie{$path-element}	{ $next = $trie{$path-element} }
-		elsif $trie{'*'}	{ $next = $trie{'*'} }
-		else			{ return }
-
-		return $next;
-		}
-
 	sub find-in-trie( $trie, @path )
 		{
 		my $temp = $trie;
-		for ^@path -> $index
+		for @path -> $element
 			{
-			$temp = _next-layer( $temp, @path[$index] );
+			if $temp{$element}	{ $temp = $temp{$element} }
+			elsif $temp{'*'}	{ $temp = $temp{'*'} }
+			else			{ return }
+
+			return unless $temp
 			}
+		return unless $temp;
 
 		my $r = $temp{'!'};
 
@@ -264,7 +257,11 @@ class App::Prancer::Handler
 
 	method make-app()
 		{
-		display-trie($GET, '');# if $!trace;
+		# if $!trace
+		for %handler.keys -> $method
+			{
+			display-trie(%handler{$method}, $method);
+			}
 
 		my $trace-on = $!trace;
 		return sub ( $env )
@@ -274,13 +271,12 @@ class App::Prancer::Handler
 
 			my $return-code = $state-machine.run( $env );
 
-			my $path = $env.<PATH_INFO>;
 			my @path = 
 				map { "/$_" },
-				$path.split( '/', :skip-empty );
+				$env.<PATH_INFO>.split( '/', :skip-empty );
 			my $content = "DEFAULT";
 
-			my $r = find-in-trie( $GET, @path );
+			my $r = find-in-trie( %handler<GET>, @path );
 
 			$content = $r(|@path) if $r;
 
