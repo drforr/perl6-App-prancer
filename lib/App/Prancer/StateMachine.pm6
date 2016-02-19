@@ -153,6 +153,74 @@ return False;
 		{
 return False;
 		}
+	sub L13-If-Modified-Since-exists( $machine, $r )
+		{
+return False;
+		}
+	sub L14-If-Modified-Since-is-valid-date( $machine, $r )
+		{
+return False;
+		}
+	sub L15-If-Modified-Since-after-Now( $machine, $r )
+		{
+return False;
+		}
+	sub L17-Last-Modified-after-If-Modified-Since( $machine, $r )
+		{
+return False;
+		}
+	sub M05-POST( $machine, $r )
+		{
+return False;
+		}
+	sub M07-Server-permits-POST-to-missing-resource( $machine, $r )
+		{
+return False;
+		}
+	sub M16-DELETE( $machine, $r )
+		{
+return False;
+		}
+	sub M20-Delete-enacted( $machine, $r )
+		{
+return False;
+		}
+	sub N05-Server-permits-POST-to-missing-resource( $machine, $r )
+		{
+return False;
+		}
+	sub N11-Redirect( $machine, $r )
+		{
+return False;
+		}
+	sub N16-POST( $machine, $r )
+		{
+return False;
+		}
+	sub O14-Conflict( $machine, $r )
+		{
+return False;
+		}
+	sub O16-PUT( $machine, $r )
+		{
+return False;
+		}
+	sub O18-Multiple-representations( $machine, $r )
+		{
+return False;
+		}
+	sub O20-Response-includes-an-entity( $machine, $r )
+		{
+return False;
+		}
+	sub P03-Conflict( $machine, $r )
+		{
+return False;
+		}
+	sub P11-New-resource( $machine, $r )
+		{
+return False;
+		}
 
 	has %.graph =
 		(
@@ -377,6 +445,108 @@ return False;
 			node => &L07-POST,
 			true => 'M07',
 			false => 404
+			},
+		L13 =>
+			{
+			node => &L13-If-Modified-Since-exists,
+			true => 'L14',
+			false => 'M16'
+			},
+		L14 =>
+			{
+			node => &L14-If-Modified-Since-is-valid-date,
+			true => 'L15',
+			false => 'M16'
+			},
+		L15 =>
+			{
+			node => &L15-If-Modified-Since-after-Now,
+			true => 'M16',
+			false => 'L17'
+			},
+		L17 =>
+			{
+			node => &L17-Last-Modified-after-If-Modified-Since,
+			true => 'M16',
+			false => 304
+			},
+		M05 =>
+			{
+			node => &M05-POST,
+			true => 'N05',
+			false => 410
+			},
+		M07 =>
+			{
+			node => &M07-Server-permits-POST-to-missing-resource,
+			true => 'N11',
+			false => 404
+			},
+		M16 =>
+			{
+			node => &M16-DELETE,
+			true => 'M20',
+			false => 'N16'
+			},
+		M20 =>
+			{
+			node => &M20-Delete-enacted,
+			true => 'O20',
+			false => 202
+			},
+		N05 =>
+			{
+			node => &N05-Server-permits-POST-to-missing-resource,
+			true => 'N11',
+			false => 410
+			},
+		N11 =>
+			{
+			node => &N11-Redirect,
+			true => 303,
+			false => 'P11'
+			},
+		N16 =>
+			{
+			node => &N16-POST,
+			true => 'N11',
+			false => 'O16'
+			},
+		O14 =>
+			{
+			node => &O14-Conflict,
+			true => 409,
+			false => 'P11'
+			},
+		O16 =>
+			{
+			node => &O16-PUT,
+			true => 'O14',
+			false => 'O18'
+			},
+		O18 =>
+			{
+			node => &O18-Multiple-representations,
+			true => 300,
+			false => 'O16'
+			},
+		O20 => 
+			{
+			node => &O20-Response-includes-an-entity,
+			true => 204,
+			false => 'O18'
+			},
+		P03 =>
+			{
+			node => &P03-Conflict,
+			true => 409,
+			false => 'P11'
+			},
+		P11 =>
+			{
+			node => &P11-New-resource,
+			true => 201,
+			false => 'O20'
 			},
 		);
 
