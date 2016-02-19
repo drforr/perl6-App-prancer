@@ -153,7 +153,6 @@ class App::Prancer::Handler
 				@args.append( $path-element );
 				}
 			}
-		@args = ( Nil ) if !@args;
 
 		return
 			{
@@ -201,7 +200,14 @@ class App::Prancer::Handler
 		my @wildcard =
 			map { $_ ~~ Str ?? $_ !! '*' },
 			@( $info.<arguments> );
-		insert-into-trie( $GET, @wildcard, $r );
+		if @wildcard.elems
+			{
+			insert-into-trie( $GET, @wildcard, $r );
+			}
+		else
+			{
+			$GET{'!'} = $r;
+			}
 		}
 
 	sub MIME-type( $filename )
@@ -232,10 +238,28 @@ class App::Prancer::Handler
 			}
 		}
 
-	sub find-in-trie( $t, @path )
+	sub _next-layer( $trie, $path-element )
 		{
+		my $next;
 
-		return;
+		if $trie{$path-element}	{ $next = $trie{$path-element} }
+		elsif $trie{'*'}	{ $next = $trie{'*'} }
+		else			{ return }
+
+		return $next;
+		}
+
+	sub find-in-trie( $trie, @path )
+		{
+		my $temp = $trie;
+		for ^@path -> $index
+			{
+			$temp = _next-layer( $temp, @path[$index] );
+			}
+
+		my $r = $temp{'!'};
+
+		return $r;
 		}
 
 	method make-app()
@@ -256,45 +280,7 @@ class App::Prancer::Handler
 				$path.split( '/', :skip-empty );
 			my $content = "DEFAULT";
 
-			my $r;
-
-if @path.elems == 3
-	{
-	my $temp0 = $GET;
-	my $temp1;
-	my $temp2;
-
-	if $temp0{@path[0]} { $temp1 = $temp0{@path[0]} }
-	elsif $temp0{'*'}   { $temp1 = $temp0{'*'} }
-
-	if $temp1{@path[1]} { $temp2 = $temp1{@path[1]} }
-	elsif $temp1{'*'}   { $temp2 = $temp1{'*'} }
-
-	if $temp2{@path[2]} { $r = $temp2{@path[2]}{'!'} }
-	elsif $temp2{'*'}   { $r = $temp2{'*'}{'!'} }
-	}
-elsif @path.elems == 2
-	{
-	my $temp0 = $GET;
-	my $temp1;
-
-	if $temp0{@path[0]} { $temp1 = $temp0{@path[0]} }
-	elsif $temp0{'*'}   { $temp1 = $temp0{'*'} }
-
-	if $temp1{@path[1]} { $r = $temp1{@path[1]}{'!'} }
-	elsif $temp1{'*'}   { $r = $temp1{'*'}{'!'} }
-	}
-elsif @path.elems == 1
-	{
-	my $temp0 = $GET;
-
-	if $temp0{@path[0]} { $r = $temp0{@path[0]}{'!'} }
-	elsif $temp0{'*'}   { $r = $temp0{'*'}{'!'} }
-	}
-elsif @path.elems == 0
-	{
-	if $GET{'/'} { $r = $GET{''}{'!'} }
-	}
+			my $r = find-in-trie( $GET, @path );
 
 			$content = $r(|@path) if $r;
 
