@@ -16,7 +16,7 @@ class App::Prancer::StateMachine
 	constant QUERY-LENGTH-LIMIT = 1024;
 	sub B11-uri-too-long( $machine, $r )
 		{
-		return $r.<QUERY_STRING>.chars > QUERY-LENGTH-LIMIT
+return False;
 		}
 	sub B10-method-allowed-on-resource( $machine, $r )
 		{
@@ -47,9 +47,7 @@ return True;
 return False;
 		}
 	sub B03-OPTIONS( $machine, $r )
-		{
-return False;
-		}
+		{ return $r.<method> eq 'OPTIONS' }
 	sub C03-Accept-exists( $machine, $r )
 		{
 return True;
@@ -119,8 +117,7 @@ return True;
 return False;
 		}
 	sub I07-PUT( $machine, $r )
-		{
-		}
+		{ return $r.<method> eq 'PUT' }
 	sub I12-If-None-Match-exists( $machine, $r )
 		{
 return False;
@@ -130,9 +127,7 @@ return False;
 return False;
 		}
 	sub J18-GET-or-HEAD( $machine, $r )
-		{
-return True;
-		}
+		{ return $r.<method> eq 'GET' or $r.<method> eq 'HEAD' }
 	sub K05-Resource-Moved-Permanently( $machine, $r )
 		{
 return False;
@@ -150,9 +145,7 @@ return False;
 return False;
 		}
 	sub L07-POST( $machine, $r )
-		{
-return False;
-		}
+		{ return $r.<method> eq 'POST' }
 	sub L13-If-Modified-Since-exists( $machine, $r )
 		{
 return False;
@@ -170,17 +163,13 @@ return False;
 return False;
 		}
 	sub M05-POST( $machine, $r )
-		{
-return False;
-		}
+		{ return $r.<method> eq 'POST' }
 	sub M07-Server-permits-POST-to-missing-resource( $machine, $r )
 		{
 return False;
 		}
 	sub M16-DELETE( $machine, $r )
-		{
-return False;
-		}
+		{ return $r.<method> eq 'DELETE' }
 	sub M20-Delete-enacted( $machine, $r )
 		{
 return False;
@@ -194,17 +183,13 @@ return False;
 return False;
 		}
 	sub N16-POST( $machine, $r )
-		{
-return False;
-		}
+		{ return $r.<method> eq 'POST' }
 	sub O14-Conflict( $machine, $r )
 		{
 return False;
 		}
 	sub O16-PUT( $machine, $r )
-		{
-return False;
-		}
+		{ return $r.<method> eq 'PUT' }
 	sub O18-Multiple-representations( $machine, $r )
 		{
 return False;

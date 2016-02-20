@@ -110,9 +110,6 @@ expressions, then types, followed by untyped parameters. If all else fails,
 the array fallbacks are checked. If those should fail, it looks in the C<static>
 directory for files to serve, otherwise it throws a 404 message.
 
-When it's been integrated it'll use Riak's WebMachine state diagram to actually
-handle the return codes, that's an eventual improvement.
-
 =end pod
 
 use App::Prancer::StateMachine;
