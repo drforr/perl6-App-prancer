@@ -17,21 +17,21 @@ sub content-from( $cb, $method, $URL )
 multi GET( ) is handler { '/' }
 
 multi GET( '/foo' ) is handler { '/foo' }
-multi GET( Str $x ) is handler { "{$x}" }
+multi GET( Str $x ) is handler { "/{$x}" }
 
 multi GET( '/foo', '/foo' ) is handler { '/foo/foo' }
-multi GET( '/foo', Str $x ) is handler { "/foo{$x}" }
-multi GET( Str $x, '/foo' ) is handler { "{$x}/foo" }
-multi GET( Str $x, Str $y ) is handler { "{$x}{$y}" }
+multi GET( '/foo', Str $x ) is handler { "/foo/{$x}" }
+multi GET( Str $x, '/foo' ) is handler { "/{$x}/foo" }
+multi GET( Str $x, Str $y ) is handler { "/{$x}/{$y}" }
 
 multi GET( '/foo', '/foo', '/foo' ) is handler { '/foo/foo/foo' }
-multi GET( '/foo', '/foo', Str $x ) is handler { "/foo/foo{$x}" }
-multi GET( '/foo', Str $x, '/foo' ) is handler { "/foo{$x}/foo" }
-multi GET( '/foo', Str $x, Str $y ) is handler { "/foo{$x}{$y}" }
-multi GET( Str $x, '/foo', '/foo' ) is handler { "{$x}/foo/foo" }
-multi GET( Str $x, '/foo', Str $y ) is handler { "{$x}/foo{$y}" }
-multi GET( Str $x, Str $y, '/foo' ) is handler { "{$x}{$y}/foo" }
-multi GET( Str $x, Str $y, Str $z ) is handler { "{$x}{$y}{$z}" }
+multi GET( '/foo', '/foo', Str $x ) is handler { "/foo/foo/{$x}" }
+multi GET( '/foo', Str $x, '/foo' ) is handler { "/foo/{$x}/foo" }
+multi GET( '/foo', Str $x, Str $y ) is handler { "/foo/{$x}/{$y}" }
+multi GET( Str $x, '/foo', '/foo' ) is handler { "/{$x}/foo/foo" }
+multi GET( Str $x, '/foo', Str $y ) is handler { "/{$x}/foo/{$y}" }
+multi GET( Str $x, Str $y, '/foo' ) is handler { "/{$x}/{$y}/foo" }
+multi GET( Str $x, Str $y, Str $z ) is handler { "/{$x}/{$y}/{$z}" }
 
 test-psgi
 	client => -> $cb

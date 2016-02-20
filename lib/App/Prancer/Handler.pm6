@@ -237,11 +237,23 @@ class App::Prancer::Handler
 	sub find-in-trie( $trie, @path )
 		{
 		my $temp = $trie;
+		my @args;
 		for @path -> $element
 			{
-			if $temp{$element}	{ $temp = $temp{$element} }
-			elsif $temp{'*'}	{ $temp = $temp{'*'} }
-			else			{ return }
+			if $temp{$element}
+				{
+				$temp = $temp{$element};
+				push @args, $element;
+				}
+			elsif $temp{'*'}
+				{
+				$temp = $temp{'*'};
+				push @args, Str;
+				}
+			else
+				{
+				return
+				}
 
 			return unless $temp
 			}
@@ -249,7 +261,7 @@ class App::Prancer::Handler
 
 		my $r = $temp{'!'};
 
-		return $r;
+		return [ $r, @args ];
 		}
 
 	method make-app()
@@ -273,9 +285,22 @@ class App::Prancer::Handler
 				$env.<PATH_INFO>.split( '/', :skip-empty );
 			my $content = "DEFAULT";
 
-			my $r = find-in-trie( %handler<GET>, @path );
+			my ( $r, $args ) = find-in-trie( %handler<GET>, @path );
+			my @final-args;
+			for @path Z @( $args ) -> $arg
+				{
+				if $arg.[1] ~~ Str:D
+					{
+					push @final-args, $arg.[0]
+					}
+				else
+					{
+					$arg.[0] ~~ /^\/(.+)$/;
+					push @final-args, ~$0
+					}
+				}
 
-			$content = $r(|@path) if $r;
+			$content = $r(|@final-args) if $r;
 
 			return	200,
 				[ 'Content-Type' => 'text/plain' ],
