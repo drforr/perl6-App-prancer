@@ -30,7 +30,7 @@ subtest sub {
      q{'true' values have the correct format};
   ok so True == ( map { ?$s.graph.{$_} },
                   grep { ?$_ ~~ / ^ <Valid-Name> / },
-                  map { $_.<true> }, $s.graph.values).all,
+                  map { $_.<true> }, $s.graph.values ).all,
      q{'true' edges that go to a decision are in the graph};
 }, q{'true' edges};
 
@@ -46,7 +46,7 @@ subtest sub {
      q{'false' values have the correct format};
   ok so True == ( map { ?$s.graph.{$_} },
                   grep { ?$_ ~~ / ^ <Valid-Name> / },
-                  map { $_.<false> }, $s.graph.values).all,
+                  map { $_.<false> }, $s.graph.values ).all,
      q{'false' edges that go to a decision are in the graph};
 }, q{'false' edges};
 

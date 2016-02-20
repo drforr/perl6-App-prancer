@@ -17,21 +17,21 @@ sub content-from( $cb, $method, $URL )
 multi GET( ) is handler { '/' }
 
 multi GET( '/foo' ) is handler { '/foo' }
-multi GET( Str $x ) is handler { '/*' }
+multi GET( Str $x ) is handler { "{$x}" }
 
 multi GET( '/foo', '/foo' ) is handler { '/foo/foo' }
-multi GET( '/foo', Str $x ) is handler { '/foo/*' }
-multi GET( Str $x, '/foo' ) is handler { '/*/foo' }
-multi GET( Str $x, Str $y ) is handler { '/*/*' }
+multi GET( '/foo', Str $x ) is handler { "/foo{$x}" }
+multi GET( Str $x, '/foo' ) is handler { "{$x}/foo" }
+multi GET( Str $x, Str $y ) is handler { "{$x}{$y}" }
 
 multi GET( '/foo', '/foo', '/foo' ) is handler { '/foo/foo/foo' }
-multi GET( '/foo', '/foo', Str $x ) is handler { '/foo/foo/*' }
-multi GET( '/foo', Str $x, '/foo' ) is handler { '/foo/*/foo' }
-multi GET( '/foo', Str $x, Str $y ) is handler { '/foo/*/*' }
-multi GET( Str $x, '/foo', '/foo' ) is handler { '/*/foo/foo' }
-multi GET( Str $x, '/foo', Str $y ) is handler { '/*/foo/*' }
-multi GET( Str $x, Str $y, '/foo' ) is handler { '/*/*/foo' }
-multi GET( Str $x, Str $y, Str $z ) is handler { '/*/*/*' }
+multi GET( '/foo', '/foo', Str $x ) is handler { "/foo/foo{$x}" }
+multi GET( '/foo', Str $x, '/foo' ) is handler { "/foo{$x}/foo" }
+multi GET( '/foo', Str $x, Str $y ) is handler { "/foo{$x}{$y}" }
+multi GET( Str $x, '/foo', '/foo' ) is handler { "{$x}/foo/foo" }
+multi GET( Str $x, '/foo', Str $y ) is handler { "{$x}/foo{$y}" }
+multi GET( Str $x, Str $y, '/foo' ) is handler { "{$x}{$y}/foo" }
+multi GET( Str $x, Str $y, Str $z ) is handler { "{$x}{$y}{$z}" }
 
 test-psgi
 	client => -> $cb
@@ -39,21 +39,21 @@ test-psgi
 		is content-from( $cb, 'GET', '/' ), '/';
 
 		is content-from( $cb, 'GET', '/foo' ), '/foo';
-		is content-from( $cb, 'GET', '/bar' ), '/*';
+		is content-from( $cb, 'GET', '/bar' ), '/bar';
 
 		is content-from( $cb, 'GET', '/foo/foo' ), '/foo/foo';
-		is content-from( $cb, 'GET', '/foo/bar' ), '/foo/*';
-		is content-from( $cb, 'GET', '/bar/foo' ), '/*/foo';
-		is content-from( $cb, 'GET', '/bar/bar' ), '/*/*';
+		is content-from( $cb, 'GET', '/foo/bar' ), '/foo/bar';
+		is content-from( $cb, 'GET', '/bar/foo' ), '/bar/foo';
+		is content-from( $cb, 'GET', '/bar/bar' ), '/bar/bar';
 
 		is content-from( $cb, 'GET', '/foo/foo/foo' ), '/foo/foo/foo';
-		is content-from( $cb, 'GET', '/foo/foo/bar' ), '/foo/foo/*';
-		is content-from( $cb, 'GET', '/foo/bar/foo' ), '/foo/*/foo';
-		is content-from( $cb, 'GET', '/foo/bar/bar' ), '/foo/*/*';
-		is content-from( $cb, 'GET', '/bar/foo/foo' ), '/*/foo/foo';
-		is content-from( $cb, 'GET', '/bar/foo/bar' ), '/*/foo/*';
-		is content-from( $cb, 'GET', '/bar/bar/foo' ), '/*/*/foo';
-		is content-from( $cb, 'GET', '/bar/bar/bar' ), '/*/*/*';
+		is content-from( $cb, 'GET', '/foo/foo/bar' ), '/foo/foo/bar';
+		is content-from( $cb, 'GET', '/foo/bar/foo' ), '/foo/bar/foo';
+		is content-from( $cb, 'GET', '/foo/bar/bar' ), '/foo/bar/bar';
+		is content-from( $cb, 'GET', '/bar/foo/foo' ), '/bar/foo/foo';
+		is content-from( $cb, 'GET', '/bar/foo/bar' ), '/bar/foo/bar';
+		is content-from( $cb, 'GET', '/bar/bar/foo' ), '/bar/bar/foo';
+		is content-from( $cb, 'GET', '/bar/bar/bar' ), '/bar/bar/bar';
 		},
 	app => $p.make-app;
 

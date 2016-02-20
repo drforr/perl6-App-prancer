@@ -1,5 +1,6 @@
 class App::Prancer::StateMachine
 	{
+	constant QUERY-LENGTH-LIMIT = 1024;
 #	has Bool $.available = False;
 	has Bool $.trace = False;
 
@@ -13,7 +14,6 @@ class App::Prancer::StateMachine
 		return $r.<REQUEST_METHOD> ~~
 			  <DELETE GET HEAD OPTIONS PATCH POST PUT>.any
 		}
-	constant QUERY-LENGTH-LIMIT = 1024;
 	sub B11-uri-too-long( $machine, $r )
 		{
 return False;
@@ -49,33 +49,25 @@ return False;
 	sub B03-OPTIONS( $machine, $r )
 		{ return $r.<method> eq 'OPTIONS' }
 	sub C03-Accept-exists( $machine, $r )
-		{
-return True;
-		}
+		{ return ?$r.<HTTP_ACCEPT> }
 	sub C04-Acceptable-media-type-available( $machine, $r )
 		{
 return True;
 		}
 	sub D04-Accept-Language-exists( $machine, $r )
-		{
-return True;
-		}
+		{ return ?$r.<HTTP_ACCEPT_LANGUAGE> }
 	sub D05-Acceptable-language-available( $machine, $r )
 		{
 return True;
 		}
 	sub E05-Accept-Charset-exists( $machine, $r )
-		{
-return True;
-		}
+		{ return ?$r.<HTTP_ACCEPT_CHARSET> }
 	sub E06-Acceptable-charset-available( $machine, $r )
 		{
 return True;
 		}
 	sub F06-Accept-Encoding-exists( $machine, $r )
-		{
-return True;
-		}
+		{ return ?$r.<HTTP_ACCEPT_ENCODING> }
 	sub F07-Acceptable-encoding-available( $machine, $r )
 		{
 return True;
@@ -117,7 +109,7 @@ return True;
 return False;
 		}
 	sub I07-PUT( $machine, $r )
-		{ return $r.<method> eq 'PUT' }
+		{ return $r.<REQUEST_METHOD> eq 'PUT' }
 	sub I12-If-None-Match-exists( $machine, $r )
 		{
 return False;
@@ -127,7 +119,10 @@ return False;
 return False;
 		}
 	sub J18-GET-or-HEAD( $machine, $r )
-		{ return $r.<method> eq 'GET' or $r.<method> eq 'HEAD' }
+		{
+		return $r.<REQUEST_METHOD> eq 'GET' or
+			$r.<REQUEST_METHOD> eq 'HEAD'
+		}
 	sub K05-Resource-Moved-Permanently( $machine, $r )
 		{
 return False;
@@ -183,13 +178,13 @@ return False;
 return False;
 		}
 	sub N16-POST( $machine, $r )
-		{ return $r.<method> eq 'POST' }
+		{ return $r.<REQUEST_METHOD> eq 'POST' }
 	sub O14-Conflict( $machine, $r )
 		{
 return False;
 		}
 	sub O16-PUT( $machine, $r )
-		{ return $r.<method> eq 'PUT' }
+		{ return $r.<REQUEST_METHOD> eq 'PUT' }
 	sub O18-Multiple-representations( $machine, $r )
 		{
 return False;
@@ -538,6 +533,7 @@ return False;
 constant MAX-ITERATIONS = 10;
 	method run( $env )
 		{
+#say $env;
 		my $state = 'B13';
 my $iterations = MAX-ITERATIONS;
 		while $state !~~ Int
