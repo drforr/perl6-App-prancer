@@ -17,14 +17,20 @@ sub content-from( $cb, $method, $URL )
 multi GET( ) is handler { '/' }
 
 multi GET( '/foo' ) is handler { '/foo' }
+multi GET( 'bare' ) is handler { '/bare' }
 multi GET( Str $x ) is handler { "/{$x}" }
 
-multi GET( '/foo', '/foo' ) is handler { '/foo/foo' }
-multi GET( '/foo', Str $x ) is handler { "/foo/{$x}" }
-multi GET( Str $x, '/foo' ) is handler { "/{$x}/foo" }
+multi GET( '/foo', '/foo' ) is handler { "/foo/foo"   }
+multi GET( '/foo', 'bare' ) is handler { "/foo/bare"  }
+multi GET( '/foo', Str $x ) is handler { "/foo/{$x}"  }
+multi GET( 'bare', '/foo' ) is handler { "/bare/foo"  }
+multi GET( 'bare', 'bare' ) is handler { "/bare/bare" }
+multi GET( 'bare', Str $x ) is handler { "/bare/{$x}" }
+multi GET( Str $x, '/foo' ) is handler { "/{$x}/foo"  }
+multi GET( Str $x, 'bare' ) is handler { "/{$x}/bare" }
 multi GET( Str $x, Str $y ) is handler { "/{$x}/{$y}" }
 
-multi GET( '/foo', '/foo', '/foo' ) is handler { '/foo/foo/foo' }
+multi GET( '/foo', '/foo', '/foo' ) is handler { "/foo/foo/foo" }
 multi GET( '/foo', '/foo', Str $x ) is handler { "/foo/foo/{$x}" }
 multi GET( '/foo', Str $x, '/foo' ) is handler { "/foo/{$x}/foo" }
 multi GET( '/foo', Str $x, Str $y ) is handler { "/foo/{$x}/{$y}" }
@@ -38,13 +44,19 @@ test-psgi
 		{
 		is content-from( $cb, 'GET', '/' ), '/';
 
-		is content-from( $cb, 'GET', '/foo' ), '/foo';
-		is content-from( $cb, 'GET', '/bar' ), '/bar';
+		is content-from( $cb, 'GET', '/foo'  ), '/foo';
+		is content-from( $cb, 'GET', '/bare' ), '/bare';
+		is content-from( $cb, 'GET', '/bar'  ), '/bar';
 
-		is content-from( $cb, 'GET', '/foo/foo' ), '/foo/foo';
-		is content-from( $cb, 'GET', '/foo/bar' ), '/foo/bar';
-		is content-from( $cb, 'GET', '/bar/foo' ), '/bar/foo';
-		is content-from( $cb, 'GET', '/bar/bar' ), '/bar/bar';
+		is content-from( $cb, 'GET', '/foo/foo'   ), '/foo/foo';
+		is content-from( $cb, 'GET', '/foo/bare'  ), '/foo/bare';
+		is content-from( $cb, 'GET', '/foo/bar'   ), '/foo/bar';
+		is content-from( $cb, 'GET', '/bare/foo'  ), '/bare/foo';
+		is content-from( $cb, 'GET', '/bare/bare' ), '/bare/bare';
+		is content-from( $cb, 'GET', '/bare/bar'  ), '/bare/bar';
+		is content-from( $cb, 'GET', '/bar/foo'   ), '/bar/foo';
+		is content-from( $cb, 'GET', '/bar/bare'  ), '/bar/bare';
+		is content-from( $cb, 'GET', '/bar/bar'   ), '/bar/bar';
 
 		is content-from( $cb, 'GET', '/foo/foo/foo' ), '/foo/foo/foo';
 		is content-from( $cb, 'GET', '/foo/foo/bar' ), '/foo/foo/bar';

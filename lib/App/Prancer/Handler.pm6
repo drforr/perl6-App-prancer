@@ -240,7 +240,12 @@ class App::Prancer::Handler
 		my @args;
 		for @path -> $element
 			{
-			if $temp{$element}
+			if $temp{"/$element"}
+				{
+				$temp = $temp{"/$element"};
+				push @args, $element;
+				}
+			elsif $temp{$element}
 				{
 				$temp = $temp{$element};
 				push @args, $element;
