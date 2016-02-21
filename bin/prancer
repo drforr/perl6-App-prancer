@@ -141,7 +141,6 @@ multi MAIN( 'run-blog', Str:D $app-name,
 	{
 say "Building blog...";
 say "Launching blog...";
-	#prance(True);
 	prance;
 	}
 

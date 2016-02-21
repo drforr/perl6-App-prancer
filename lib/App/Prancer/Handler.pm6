@@ -116,7 +116,8 @@ use App::Prancer::StateMachine;
 
 class App::Prancer::Handler
 	{
-	has Bool $!trace = False;
+	has Bool $!verbose          = False;
+	has Bool $!trace            = False;
 	has Str  $!static-directory = 'static';
 
 	use Crust::Runner;
@@ -274,15 +275,20 @@ class App::Prancer::Handler
 		return [ $r, @args ];
 		}
 
-	method make-app()
+	method display-handlers( )
 		{
-		# if $!trace
+		return unless $!verbose;
+
 		for %handler.keys -> $method
 			{
-			display-trie(%handler{$method}, $method);
+			self.display-trie(%handler{$method}, $method);
 			}
+		}
 
-		my $trace-on = $!trace;
+	method make-app( )
+		{
+		self.display-handlers;
+
 		return sub ( $env )
 			{
 			my $static = serve-static( $!static-directory, $env );
@@ -318,14 +324,16 @@ class App::Prancer::Handler
 			}
 		}
 
-	method prance( $trace )
+	method prance( $verbose, $trace )
 		{
-		$!trace = $trace;
 		my $runner = Crust::Runner.new;
+
+		$!verbose = $verbose;
+		$!trace   = $trace;
 		$runner.run( self.make-app );
 		}
 
-	sub display-trie( $trie, $prefix ) returns Str
+	method display-trie( $trie, $prefix ) returns Str
 		{
 		for $trie.keys.sort -> $key
 			{
@@ -335,14 +343,19 @@ class App::Prancer::Handler
 				}
 			else
 				{
-				display-trie( $trie.{$key}, $prefix ~ ' ' ~ $key );
+				self.display-trie( $trie.{$key}, $prefix ~ ' ' ~ $key );
 				}
 			}
 		}
 
-	sub prance( :$trace = False, :$verbose = False ) is export
+	sub prance( ) is export
 		{
-		my $app = App::Prancer::Handler.new;
-		$app.prance( $trace );
+		my $verbose = False;
+		my $trace   = False;
+		my $app     = App::Prancer::Handler.new;
+
+		$verbose = True if %*ENV<VERBOSE> and %*ENV<VERBOSE> != 0;
+		$trace   = True if %*ENV<TRACE>   and %*ENV<TRACE>   != 0;
+		$app.prance( $verbose, $trace );
 		}
 	}
