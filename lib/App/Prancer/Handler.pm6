@@ -172,17 +172,22 @@ class App::Prancer::Handler
 
 	sub insert-into-trie( $t, @path, $r )
 		{
-		my $head = @path[0];
-		my @rest = @path[1..*];
-		# Hrm, 'my ( $head | @rest ) = @path;' would be nice here.
+		my ( $head, @rest ) = @path;
 
-		if $t.{$head}.defined
+		if $head
 			{
-			insert-into-trie( $t.{$head}, @rest, $r )
+			if $t.{$head}.defined
+				{
+				insert-into-trie( $t.{$head}, @rest, $r )
+				}
+			elsif $head
+				{
+				$t.{$head} = { '!' => $r }
+				}
 			}
 		else
 			{
-			$t.{$head} = { '!' => $r }
+			$t.{'!'} = $r
 			}
 		}
 

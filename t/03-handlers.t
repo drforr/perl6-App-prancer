@@ -18,6 +18,7 @@ multi GET( ) is handler { '/' }
 
 multi GET( '/foo' ) is handler { '/foo' }
 multi GET( 'bare' ) is handler { '/bare' }
+multi GET( Int $a ) is handler { '/int' }
 multi GET( Str $x ) is handler { "/{$x}" }
 
 multi GET( '/foo', '/foo' ) is handler { "/foo/foo"   }
