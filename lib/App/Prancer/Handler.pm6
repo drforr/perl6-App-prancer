@@ -168,6 +168,7 @@ class App::Prancer::Handler
 		{
 		my $temp = $trie;
 		my @args;
+
 		for @path -> $element
 			{
 			if $temp{"/$element"}
@@ -175,14 +176,9 @@ class App::Prancer::Handler
 				$temp = $temp{"/$element"};
 				push @args, $element;
 				}
-			elsif $temp{$element}
+			elsif $temp{'*(Str)*'}
 				{
-				$temp = $temp{$element};
-				push @args, $element;
-				}
-			elsif $temp{'*'}
-				{
-				$temp = $temp{'*'};
+				$temp = $temp{'*(Str)*'};
 				push @args, Str;
 				}
 			else
@@ -194,7 +190,7 @@ class App::Prancer::Handler
 			}
 		return unless $temp;
 
-		my $r = $temp{'!'};
+		my $r = $temp{'*(Routine)*'};
 
 		return [ $r, @args ];
 		}
@@ -203,10 +199,7 @@ class App::Prancer::Handler
 		{
 		return unless $!verbose;
 
-		for %handler.keys -> $method
-			{
-			self.display-trie(%handler{$method}, $method);
-			}
+		say self.display-trie(%handler{$_}, $_) for %handler.keys;
 		}
 
 	method make-app( )
@@ -262,17 +255,20 @@ class App::Prancer::Handler
 
 	method display-trie( $trie, $prefix ) returns Str
 		{
+		my Str $str;
+
 		for $trie.keys.sort -> $key
 			{
 			if $trie.{$key} ~~ Sub
 				{
-				say "Path $prefix $key";
+				$str ~= "Path $prefix $key\n";
 				}
 			else
 				{
-				self.display-trie( $trie.{$key}, $prefix ~ ' ' ~ $key );
+				$str ~= self.display-trie( $trie.{$key}, $prefix ~ ' ' ~ $key );
 				}
 			}
+		return $str;
 		}
 	}
 
@@ -288,12 +284,12 @@ sub insert-into-trie( $t, @path, $r )
 			}
 		elsif $head
 			{
-			$t.{$head} = { '!' => $r }
+			$t.{$head} = { '*(Routine)*' => $r }
 			}
 		}
 	else
 		{
-		$t.{'!'} = $r
+		$t.{'*(Routine)*'} = $r
 		}
 	}
 
@@ -338,10 +334,12 @@ multi sub trait_mod:<is>( Routine $r, :$handler! ) is export
 	{
 	my $info   = routine-to-handler( $r );
 	my $method = $info.<name>;
+
 	return unless $method ~~ HTTP-REQUEST-METHODS.any;
 
 	my @wildcard =
-		map { $_ ~~ Str ?? $_ !! '*' }, @( $info.<arguments> );
+		map { $_ ~~ Str ?? $_ !! '*(Str)*' },
+		@( $info.<arguments> );
 	insert-into-trie( %handler{$method}, @wildcard, $r );
 	}
 
