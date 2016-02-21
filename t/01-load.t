@@ -4,6 +4,6 @@ use Test;
 
 plan 1;
 
-use Prancer::Handler;
+use App::Prancer::Handler;
 
-ok 1, "'use Prancer::Handler' worked!";
+ok 1, "'use App::Prancer::Handler' worked!";
