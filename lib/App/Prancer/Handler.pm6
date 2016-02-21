@@ -114,6 +114,18 @@ directory for files to serve, otherwise it throws a 404 message.
 
 use App::Prancer::StateMachine;
 
+constant HTTP-REQUEST-METHODS = <DELETE GET HEAD OPTIONS PATCH POST PUT>;
+my %handler =
+	(
+	DELETE  => { },
+	GET     => { },
+	HEAD    => { },
+	OPTIONS => { },
+	PATCH   => { },
+	POST    => { },
+	PUT     => { },
+	);
+
 class App::Prancer::Handler
 	{
 	has Bool $!verbose          = False;
@@ -123,96 +135,7 @@ class App::Prancer::Handler
 	use Crust::Runner;
 	my $state-machine = App::Prancer::StateMachine.new;
 
-	sub routine-to-handler( Routine $r )
-		{
-		my $name      = $r.name;
-		my $signature = $r.signature;
-		my @params    = $signature.params;
-		my @args;
-
-		for $signature.params -> $param
-			{
-			if $param.name
-				{
-				@args.push( [ $param.type => $param.name ] )
-				}
-			else
-				{
-				my $path-element;
-
-				# XXX Not sure why this is necessary, except for
-				# XXX $param.constraints being a junction
-				#
-				for $param.constraints -> $constraint
-					{
-					$path-element = $constraint;
-					last;
-					}
-				@args.append( $path-element );
-				}
-			}
-
-		return
-			{
-			name      => $r.name,
-			arguments => @args,
-			routine   => $r
-			}
-		}
-
-	my %handler =
-		(
-		DELETE  => { },
-		GET     => { },
-		HEAD    => { },
-		OPTIONS => { },
-		PATCH   => { },
-		POST    => { },
-		PUT     => { },
-		);
-
-	sub insert-into-trie( $t, @path, $r )
-		{
-		my ( $head, @rest ) = @path;
-
-		if $head
-			{
-			if $t.{$head}.defined
-				{
-				insert-into-trie( $t.{$head}, @rest, $r )
-				}
-			elsif $head
-				{
-				$t.{$head} = { '!' => $r }
-				}
-			}
-		else
-			{
-			$t.{'!'} = $r
-			}
-		}
-
-	multi sub trait_mod:<is>( Routine $r, :$handler! ) is export
-		{
-		my $info   = routine-to-handler( $r );
-		my $method = $info.<name>;
-		return unless $method ~~
-			      <DELETE GET HEAD OPTIONS PATCH POST PUT>.any;
-
-		my @wildcard =
-			map { $_ ~~ Str ?? $_ !! '*' },
-			@( $info.<arguments> );
-		if @wildcard.elems
-			{
-			insert-into-trie( %handler{$method}, @wildcard, $r );
-			}
-		else
-			{
-			%handler{$method}{'!'} = $r;
-			}
-		}
-
-	sub MIME-type( $filename )
+	method MIME-type( $filename )
 		{
 		return 'text/plain' unless $filename ~~ / \.( .+ ) $/;
 		my %MIME-type =
@@ -227,11 +150,11 @@ class App::Prancer::Handler
 		return 'text/plain';
 		}
 
-	sub serve-static( Str $static-directory, $env )
+	method serve-static( Str $static-directory, $env )
 		{
 		my $file = $static-directory ~ $env.<PATH_INFO>;
 		$env.<PATH_INFO> ~~ / \.( .+ ) $/;
-		my $MIME-type = MIME-type( $file );
+		my $MIME-type = self.MIME-type( $file );
 		if $file.IO.e and not $file.IO.d
 			{
 			return 200,
@@ -240,7 +163,7 @@ class App::Prancer::Handler
 			}
 		}
 
-	sub find-in-trie( $trie, @path )
+	method find-in-trie( $trie, @path )
 		{
 		my $temp = $trie;
 		my @args;
@@ -291,7 +214,8 @@ class App::Prancer::Handler
 
 		return sub ( $env )
 			{
-			my $static = serve-static( $!static-directory, $env );
+			my $static =
+				self.serve-static( $!static-directory, $env );
 			return $static if $static;
 
 			my $return-code = $state-machine.run( $env );
@@ -301,7 +225,8 @@ class App::Prancer::Handler
 				$env.<PATH_INFO>.split( '/', :skip-empty );
 			my $content = "DEFAULT";
 
-			my ( $r, $args ) = find-in-trie( %handler<GET>, @path );
+			my ( $r, $args ) =
+				self.find-in-trie( %handler<GET>, @path );
 			my @final-args;
 			for @path Z @( $args ) -> $arg
 				{
@@ -347,15 +272,84 @@ class App::Prancer::Handler
 				}
 			}
 		}
+	}
 
-	sub prance( ) is export
+sub insert-into-trie( $t, @path, $r )
+	{
+	my ( $head, @rest ) = @path;
+
+	if $head
 		{
-		my $verbose = False;
-		my $trace   = False;
-		my $app     = App::Prancer::Handler.new;
-
-		$verbose = True if %*ENV<VERBOSE> and %*ENV<VERBOSE> != 0;
-		$trace   = True if %*ENV<TRACE>   and %*ENV<TRACE>   != 0;
-		$app.prance( $verbose, $trace );
+		if $t.{$head}.defined
+			{
+			insert-into-trie( $t.{$head}, @rest, $r )
+			}
+		elsif $head
+			{
+			$t.{$head} = { '!' => $r }
+			}
 		}
+	else
+		{
+		$t.{'!'} = $r
+		}
+	}
+
+sub routine-to-handler( Routine $r )
+	{
+	my $name      = $r.name;
+	my $signature = $r.signature;
+	my @params    = $signature.params;
+	my @args;
+
+	for $signature.params -> $param
+		{
+		if $param.name
+			{
+			@args.push( [ $param.type => $param.name ] )
+			}
+		else
+			{
+			my $path-element;
+
+			# XXX Not sure why this is necessary, except for
+			# XXX $param.constraints being a junction
+			#
+			for $param.constraints -> $constraint
+				{
+				$path-element = $constraint;
+				last;
+				}
+			@args.append( $path-element );
+			}
+		}
+
+	return
+		{
+		name      => $r.name,
+		arguments => @args,
+		routine   => $r
+		}
+	}
+
+multi sub trait_mod:<is>( Routine $r, :$handler! ) is export
+	{
+	my $info   = routine-to-handler( $r );
+	my $method = $info.<name>;
+	return unless $method ~~ HTTP-REQUEST-METHODS.any;
+
+	my @wildcard =
+		map { $_ ~~ Str ?? $_ !! '*' }, @( $info.<arguments> );
+	insert-into-trie( %handler{$method}, @wildcard, $r );
+	}
+
+sub prance( ) is export
+	{
+	my $verbose = False;
+	my $trace   = False;
+	my $app     = App::Prancer::Handler.new;
+
+	$verbose = True if %*ENV<VERBOSE> and %*ENV<VERBOSE> != 0;
+	$trace   = True if %*ENV<TRACE>   and %*ENV<TRACE>   != 0;
+	$app.prance( $verbose, $trace );
 	}
