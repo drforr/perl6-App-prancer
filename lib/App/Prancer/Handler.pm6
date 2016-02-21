@@ -126,6 +126,15 @@ my %handler =
 	PUT     => { },
 	);
 
+my %MIME-type =
+	(
+	'html'  => 'text/html',
+	'htm'   => 'text/html',
+	'xhtml' => 'text/html',
+	'jpg'	=> 'image/jpeg',
+	'png'	=> 'image/png',
+	);
+
 class App::Prancer::Handler
 	{
 	has Bool $!verbose          = False;
@@ -138,14 +147,6 @@ class App::Prancer::Handler
 	method MIME-type( $filename )
 		{
 		return 'text/plain' unless $filename ~~ / \.( .+ ) $/;
-		my %MIME-type =
-			(
-			'html'  => 'text/html',
-			'htm'   => 'text/html',
-			'xhtml' => 'text/html',
-			'jpg'	=> 'image/jpeg',
-			'png'	=> 'image/png',
-			);
 		return %MIME-type{$0} if %MIME-type{$0};
 		return 'text/plain';
 		}
@@ -153,8 +154,8 @@ class App::Prancer::Handler
 	method serve-static( Str $static-directory, $env )
 		{
 		my $file = $static-directory ~ $env.<PATH_INFO>;
-		$env.<PATH_INFO> ~~ / \.( .+ ) $/;
 		my $MIME-type = self.MIME-type( $file );
+
 		if $file.IO.e and not $file.IO.d
 			{
 			return 200,
@@ -255,6 +256,7 @@ class App::Prancer::Handler
 
 		$!verbose = $verbose;
 		$!trace   = $trace;
+
 		$runner.run( self.make-app );
 		}
 
