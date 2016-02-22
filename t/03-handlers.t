@@ -16,7 +16,7 @@ sub content-from( $cb, $method, $URL )
 
 # Root of the site.
 #
-multi GET( ) is handler { '/' }
+multi GET( '' ) is handler { '/' }
 
 # Check single-element URL
 #

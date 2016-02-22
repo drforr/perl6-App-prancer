@@ -217,6 +217,7 @@ class App::Prancer::Handler
 			my @path = 
 				map { "/$_" },
 				$env.<PATH_INFO>.split( '/', :skip-empty );
+			@path = '/' unless @path;
 			my $content = "DEFAULT";
 
 			my ( $r, $args ) =
@@ -228,10 +229,13 @@ class App::Prancer::Handler
 					{
 					push @final-args, $arg.[0]
 					}
+				elsif $arg.[0] ~~ /^\/(.+)$/
+					{
+					push @final-args, ~$0
+					}
 				else
 					{
-					$arg.[0] ~~ /^\/(.+)$/;
-					push @final-args, ~$0
+					push @final-args, ''
 					}
 				}
 
