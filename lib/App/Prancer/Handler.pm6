@@ -221,7 +221,10 @@ class App::Prancer::Handler
 			my $content = "DEFAULT";
 
 			my ( $r, $args ) =
-				self.find-in-trie( %handler<GET>, @path );
+				self.find-in-trie(
+					%handler{$env.<REQUEST_METHOD>},
+					@path
+				);
 			my @final-args;
 			for @path Z @( $args ) -> $arg
 				{
@@ -308,6 +311,7 @@ sub routine-to-handler( Routine $r )
 		{
 		if $param.name
 			{
+say $param;
 			@args.push( [ $param.type => $param.name ] )
 			}
 		else
