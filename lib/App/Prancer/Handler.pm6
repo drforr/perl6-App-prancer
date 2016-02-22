@@ -309,10 +309,11 @@ sub routine-to-handler( Routine $r )
 
 	for $signature.params -> $param
 		{
+		my $rv;
 		if $param.name
 			{
-say $param;
-			@args.push( [ $param.type => $param.name ] )
+			#$rv = [ $param.type => $param.name ]
+			$rv = '*(' ~ $param.type.perl ~ ')*'
 			}
 		else
 			{
@@ -326,8 +327,10 @@ say $param;
 				$path-element = $constraint;
 				last;
 				}
-			@args.append( $path-element );
+			$rv = $path-element
 			}
+
+		@args.append( $rv );
 		}
 
 	return
@@ -345,10 +348,7 @@ multi sub trait_mod:<is>( Routine $r, :$handler! ) is export
 
 	return unless $method ~~ HTTP-REQUEST-METHODS.any;
 
-	my @wildcard =
-		map { $_ ~~ Str ?? $_ !! '*(Str)*' },
-		@( $info.<arguments> );
-	insert-into-trie( %handler{$method}, @wildcard, $r );
+	insert-into-trie( %handler{$method}, @( $info.<arguments> ), $r );
 	}
 
 sub prance( ) is export
