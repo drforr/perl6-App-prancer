@@ -172,10 +172,15 @@ class App::Prancer::Handler
 		for @path -> $element
 			{
 			$element ~~ / ^ \/ ( .* ) $ /;
-			if $temp{"/$element"}
+			if $temp{$element}
 				{
-				$temp = $temp{"/$element"};
+				$temp = $temp{$element};
 				push @args, $element;
+				}
+			elsif $temp{$0}
+				{
+				$temp = $temp{$0};
+				push @args, $0;
 				}
 			elsif $temp{'*(Int)*'} and +$0
 				{
@@ -356,6 +361,12 @@ multi sub trait_mod:<is>( Routine $r, :$handler! ) is export
 	{
 	my $info   = routine-to-handler( $r );
 	my $method = $info.<name>;
+
+	if $info.<arguments>.[0] eq '' and $info.<argument>.elems == 1
+		{
+		%handler{$method}{''}<*(Routine)*> = $r;
+		return;
+		}
 
 	return unless $method ~~ HTTP-REQUEST-METHODS.any;
 
