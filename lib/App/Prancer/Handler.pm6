@@ -171,10 +171,16 @@ class App::Prancer::Handler
 
 		for @path -> $element
 			{
+			$element ~~ / ^ \/ ( .* ) $ /;
 			if $temp{"/$element"}
 				{
 				$temp = $temp{"/$element"};
 				push @args, $element;
+				}
+			elsif $temp{'*(Int)*'} and +$0
+				{
+				$temp = $temp{'*(Int)*'};
+				push @args, Int;
 				}
 			elsif $temp{'*(Str)*'}
 				{
@@ -228,18 +234,23 @@ class App::Prancer::Handler
 			my @final-args;
 			for @path Z @( $args ) -> $arg
 				{
-				if $arg.[1] ~~ Str:D
+				my $rv;
+				$arg.[0] ~~ / ^ \/ ( .* ) $ /;
+
+				if $arg.[1] ~~ Int#:D
 					{
-					push @final-args, $arg.[0]
+					$rv = +$0
 					}
-				elsif $arg.[0] ~~ /^\/(.+)$/
+				elsif $arg.[1] ~~ Str:D
 					{
-					push @final-args, ~$0
+					$rv = $arg.[0]
 					}
 				else
 					{
-					push @final-args, ''
+					$rv = ~$0
 					}
+
+				push @final-args, $rv;
 				}
 
 			$content = $r(|@final-args) if $r;

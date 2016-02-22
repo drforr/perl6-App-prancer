@@ -22,6 +22,7 @@ multi GET( '' ) is handler { '/' }
 #
 multi GET( '/foo' ) is handler { '/foo' }
 multi GET( 'bare' ) is handler { '/bare' }
+multi GET( Int $x ) is handler { "/#{$x}" }
 multi GET( Str $x ) is handler { "/{$x}" }
 
 # Check that a single argument can be broken in twain.
@@ -58,10 +59,11 @@ test-psgi
 
 		subtest sub
 			{
-			plan 4;
+			plan 5;
 
 			is content-from( $cb, 'GET', '/foo'  ), '/foo';
 			is content-from( $cb, 'GET', '/bare' ), '/bare';
+			is content-from( $cb, 'GET', '/2016' ), '/#2016';
 			is content-from( $cb, 'GET', '/bar'  ), '/bar';
 
 			is content-from( $cb, 'GET', '/join/join'   ),
