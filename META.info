@@ -22,7 +22,9 @@
 	"provides"      : {
 		"Prancer"	: "lib/Prancer.pm"
 	},
-	"depends"       : [ ],
+	"depends"       : [
+		"Crust"
+	],
 	"test-depends"  : [
 		"Test"
 	],
