@@ -112,6 +112,7 @@ directory for files to serve, otherwise it throws a 404 message.
 
 =end pod
 
+use URI;
 use App::Prancer::StateMachine;
 
 constant HTTP-REQUEST-METHODS = <DELETE GET HEAD OPTIONS PATCH POST PUT>;
@@ -258,6 +259,12 @@ class App::Prancer::Handler
 				push @final-args, $rv;
 				}
 
+			if $env.<QUERY_STRING>
+				{
+				my $uri = URI.new( "$env.<p6sgi.url-scheme>://$env.<REMOTE_HOST>$env.<PATH_INFO>?$env.<QUERY_STRING>" );
+				@final-args.push($uri.query-form);
+				}
+
 			$content = $r(|@final-args) if $r;
 
 			return	200,
@@ -328,7 +335,6 @@ sub routine-to-handler( Routine $r )
 		my $rv;
 		if $param.name
 			{
-			#$rv = [ $param.type => $param.name ]
 			$rv = '*(' ~ $param.type.perl ~ ')*'
 			}
 		else

@@ -23,6 +23,7 @@
 		"Prancer"	: "lib/Prancer.pm"
 	},
 	"depends"       : [
+		"URI"
 		"Crust"
 	],
 	"test-depends"  : [
