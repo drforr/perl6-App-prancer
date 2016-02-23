@@ -232,11 +232,17 @@ class App::Prancer::Handler
 			@path = '/' unless @path;
 			my $content = "DEFAULT";
 
-			my ( $r, $args ) =
+##############################################################################
+#
+# This block needs to be rewritten much tighter.
+# But it works, and it's my bedtime.
+#
+			my ( $info, $args ) =
 				self.find-in-trie(
 					%handler{$env.<REQUEST_METHOD>},
 					@path
 				);
+			my $r = $info.<routine>;
 			my @final-args;
 			for @path Z @( $args ) -> $arg
 				{
@@ -259,13 +265,23 @@ class App::Prancer::Handler
 				push @final-args, $rv;
 				}
 
-			if $env.<QUERY_STRING>
+			my @really-final-args;
+			for @( $info.<parameters> ) -> $parameter
 				{
-				my $uri = URI.new( "$env.<p6sgi.url-scheme>://$env.<REMOTE_HOST>$env.<PATH_INFO>?$env.<QUERY_STRING>" );
-				@final-args.push($uri.query-form);
+				if $parameter eq '*%QUERY*'
+					{
+					my $uri = URI.new( "$env.<p6sgi.url-scheme>://$env.<REMOTE_HOST>$env.<PATH_INFO>?$env.<QUERY_STRING>" );
+					@really-final-args.push($uri.query-form);
+					}
+				else
+					{
+					@really-final-args.push( @final-args.shift )
+					}
 				}
 
-			$content = $r(|@final-args) if $r;
+
+			$content = $r(|@really-final-args) if $r;
+##############################################################################
 
 			return	200,
 				[ 'Content-Type' => 'text/plain' ],
@@ -376,13 +392,13 @@ multi sub trait_mod:<is>( Routine $r, :$handler! ) is export
 
 	if $info.<path-info>.[0] eq ''
 		{
-		%handler{$method}{''}<*(Routine)*> = $r;
+		%handler{$method}{''}<*(Routine)*> = $info;
 		return;
 		}
 
 	return unless $method ~~ HTTP-REQUEST-METHODS.any;
 
-	insert-into-trie( %handler{$method}, @( $info.<path-info> ), $r );
+	insert-into-trie( %handler{$method}, @( $info.<path-info> ), $info );
 	}
 
 sub prance( ) is export

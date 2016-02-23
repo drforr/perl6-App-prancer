@@ -22,6 +22,7 @@ multi GET( '' ) is handler { '/' }
 #
 multi GET( '/foo'          ) is handler { '/foo'                        }
 multi GET( '/post', %QUERY ) is handler { "/post?format=%QUERY<format>" }
+multi GET( %QUERY, '/user' ) is handler { "/user?format=%QUERY<format>" }
 multi GET( 'bare'          ) is handler { '/bare'                       }
 multi GET( Int $x          ) is handler { "/#{$x}"                      }
 multi GET( Str $x          ) is handler { "/\${$x}"                     }
@@ -60,12 +61,14 @@ test-psgi
 
 		subtest sub
 			{
-			plan 6;
+			plan 7;
 
 			is content-from( $cb, 'GET', '/foo'  ),
 				'/foo';
 			is content-from( $cb, 'GET', '/post?format=JSON'  ),
 				'/post?format=JSON';
+			is content-from( $cb, 'GET', '/user?format=JSON'  ),
+				'/user?format=JSON';
 			is content-from( $cb, 'GET', '/bare' ),
 				'/bare';
 			is content-from( $cb, 'GET', '/2016' ),
