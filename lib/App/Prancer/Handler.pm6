@@ -327,13 +327,17 @@ sub routine-to-handler( Routine $r )
 	{
 	my $name      = $r.name;
 	my $signature = $r.signature;
-	my @params    = $signature.params;
-	my @args;
+	my @path-info;
+	my @parameters;
 
 	for $signature.params -> $param
 		{
 		my $rv;
-		if $param.name
+		if $param.name and $param.name eq '%QUERY'
+			{
+			$rv = '*' ~ $param.name ~ '*'
+			}
+		elsif $param.name
 			{
 			$rv = '*(' ~ $param.type.perl ~ ')*'
 			}
@@ -352,14 +356,16 @@ sub routine-to-handler( Routine $r )
 			$rv = $path-element
 			}
 
-		@args.append( $rv );
+		@path-info.append( $rv ) if $rv ne '*%QUERY*';
+		@parameters.append( $rv );
 		}
 
 	return
 		{
-		name      => $r.name,
-		arguments => @args,
-		routine   => $r
+		name       => $r.name,
+		path-info  => @path-info,
+		parameters => @parameters,
+		routine    => $r
 		}
 	}
 
@@ -368,7 +374,7 @@ multi sub trait_mod:<is>( Routine $r, :$handler! ) is export
 	my $info   = routine-to-handler( $r );
 	my $method = $info.<name>;
 
-	if $info.<arguments>.[0] eq '' and $info.<argument>.elems == 1
+	if $info.<path-info>.[0] eq ''
 		{
 		%handler{$method}{''}<*(Routine)*> = $r;
 		return;
@@ -376,7 +382,7 @@ multi sub trait_mod:<is>( Routine $r, :$handler! ) is export
 
 	return unless $method ~~ HTTP-REQUEST-METHODS.any;
 
-	insert-into-trie( %handler{$method}, @( $info.<arguments> ), $r );
+	insert-into-trie( %handler{$method}, @( $info.<path-info> ), $r );
 	}
 
 sub prance( ) is export
