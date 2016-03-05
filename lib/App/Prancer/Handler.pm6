@@ -233,8 +233,9 @@ sub find-element( $trie, $element )
 	return False;
 	}
 
-sub find-route( Hash $trie, *@path ) is export(:testing)
+sub find-route( Hash $trie, $path ) is export(:testing)
 	{
+	my @path = grep { $_ ne '' }, map { ~$_ }, $path.split(/\//, :v);
 	return False if @path.elems == 0;
 
 	if @path.elems == 1
@@ -298,8 +299,6 @@ sub app( $env ) is export(:testing,:ALL)
 	my $MIME-type     = 'text/HTML';
 	my @content       = '';
 	my $file          = STATIC-DIRECTORY ~ $env.<PATH_INFO>;
-#say $PRANCER-INTERNAL-ROUTES.<GET>.perl;
-#say list-routes( $PRANCER-INTERNAL-ROUTES.<GET> );
 
 	if $file.IO.e and not $file.IO.d
 		{
@@ -314,7 +313,7 @@ sub app( $env ) is export(:testing,:ALL)
 			   map { ~$_ },
 			   $env.<PATH_INFO>.split(/\//, :v);
 		my $info = find-route(
-			$PRANCER-INTERNAL-ROUTES.{$request-method}, @path );
+			$PRANCER-INTERNAL-ROUTES.{$request-method}, $env.<PATH_INFO> );
 		@content = $info.r.(|@path);
 		}
 

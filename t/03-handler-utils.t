@@ -274,9 +274,9 @@ subtest sub
 	my $routes = {};
 	nok find-route( $routes, '/' ),
 		q{Can't find route '/' with no routes specified};
-	nok find-route( $routes, '/', 'a' ),
+	nok find-route( $routes, '/a' ),
 		q{Can't find route '/a' with no routes specified};
-	nok find-route( $routes, '/', 1 ),
+	nok find-route( $routes, '/1' ),
 		q{Can't find route '/1' with no routes specified};
 
 	add-route( $routes, 1, '/' );
@@ -284,9 +284,9 @@ subtest sub
 
 	is find-route( $routes, '/' ), 1,
 		q{Can find default route};
-	nok find-route( $routes, '/', 'a' ),
+	nok find-route( $routes, '/a' ),
 		q{Can't find route '/a' with default route};
-	nok find-route( $routes, '/', 1 ),
+	nok find-route( $routes, '/1' ),
 		q{Can't find route '/1' with default route};
 
 	}, q{Find default route};
@@ -303,9 +303,9 @@ subtest sub
 
 	is find-route( $routes, '/' ), 1,
 		q{Can find default route};
-	is find-route( $routes, '/', 'a' ), 2,
+	is find-route( $routes, '/a' ), 2,
 		q{Can find route '/a' with wildcard};
-	is find-route( $routes, '/', 1 ), 2,
+	is find-route( $routes, '/1' ), 2,
 		q{Can find route '/1' with wildcard};
 
 	add-route( $routes, 3, '/', Int );
@@ -313,9 +313,9 @@ subtest sub
 
 	is find-route( $routes, '/' ), 1,
 		q{Can find default route};
-	is find-route( $routes, '/', 'a' ), 2,
+	is find-route( $routes, '/a' ), 2,
 		q{Can find route '/a' with '/*' wildcard};
-	is find-route( $routes, '/', 1 ), 3,
+	is find-route( $routes, '/1' ), 3,
 		q{Can find route '/1' with '/#' wildcard};
 
 	add-route( $routes, 4, '/', 'a' );
@@ -323,11 +323,11 @@ subtest sub
 
 	is find-route( $routes, '/' ), 1,
 		q{Can find default route};
-	is find-route( $routes, '/', 'b' ), 2,
+	is find-route( $routes, '/b' ), 2,
 		q{Can find route '/b' with '/*' wildcard};
-	is find-route( $routes, '/', 1 ), 3,
+	is find-route( $routes, '/1' ), 3,
 		q{Can find route '/1' with '/#' wildcard};
-	is find-route( $routes, '/', 'a' ), 4,
+	is find-route( $routes, '/a' ), 4,
 		q{Can find route '/a' with '/a' route};
 
 	}, q{Find /foo routes};
@@ -342,15 +342,15 @@ subtest sub
 	add-route( $routes, 2, '/', Int );
 	add-route( $routes, 3, '/', Str );
 
-	nok find-route( $routes, '/', 'a', '/', 'b' ), q{Can't find /a/b};
-	nok find-route( $routes, '/', 'a', '/', 1   ), q{Can't find /a/1};
-	nok find-route( $routes, '/', 'a', '/', 'c' ), q{Can't find /a/c};
-	nok find-route( $routes, '/', 1,   '/', 'b' ), q{Can't find /1/b};
-	nok find-route( $routes, '/', 1,   '/', 1   ), q{Can't find /1/1};
-	nok find-route( $routes, '/', 1,   '/', 'c' ), q{Can't find /1/c};
-	nok find-route( $routes, '/', 'c', '/', 'b' ), q{Can't find /c/b};
-	nok find-route( $routes, '/', 'c', '/', 1   ), q{Can't find /c/1};
-	nok find-route( $routes, '/', 'c', '/', 'c' ), q{Can't find /c/c};
+	nok find-route( $routes, '/a/b' ), q{Can't find /a/b};
+	nok find-route( $routes, '/a/1' ), q{Can't find /a/1};
+	nok find-route( $routes, '/a/c' ), q{Can't find /a/c};
+	nok find-route( $routes, '/1/b' ), q{Can't find /1/b};
+	nok find-route( $routes, '/1/1' ), q{Can't find /1/1};
+	nok find-route( $routes, '/1/c' ), q{Can't find /1/c};
+	nok find-route( $routes, '/c/b' ), q{Can't find /c/b};
+	nok find-route( $routes, '/c/1' ), q{Can't find /c/1};
+	nok find-route( $routes, '/c/c' ), q{Can't find /c/c};
 	}, q{/(all) vs. permutations of 2 terms};
 
 subtest sub
@@ -361,15 +361,15 @@ subtest sub
 	add-route( $routes, 2, '/', Int, '/' );
 	add-route( $routes, 3, '/', Str, '/' );
 
-	nok find-route( $routes, '/', 'a', '/', 'b' ), q{Can't find /a/b};
-	nok find-route( $routes, '/', 'a', '/', 1   ), q{Can't find /a/1};
-	nok find-route( $routes, '/', 'a', '/', 'c' ), q{Can't find /a/c};
-	nok find-route( $routes, '/', 1,   '/', 'b' ), q{Can't find /1/b};
-	nok find-route( $routes, '/', 1,   '/', 1   ), q{Can't find /1/1};
-	nok find-route( $routes, '/', 1,   '/', 'c' ), q{Can't find /1/c};
-	nok find-route( $routes, '/', 'c', '/', 'b' ), q{Can't find /c/b};
-	nok find-route( $routes, '/', 'c', '/', 1   ), q{Can't find /c/1};
-	nok find-route( $routes, '/', 'c', '/', 'c' ), q{Can't find /c/c};
+	nok find-route( $routes, '/a/b' ), q{Can't find /a/b};
+	nok find-route( $routes, '/a/1' ), q{Can't find /a/1};
+	nok find-route( $routes, '/a/c' ), q{Can't find /a/c};
+	nok find-route( $routes, '/1/b' ), q{Can't find /1/b};
+	nok find-route( $routes, '/1/1' ), q{Can't find /1/1};
+	nok find-route( $routes, '/1/c' ), q{Can't find /1/c};
+	nok find-route( $routes, '/c/b' ), q{Can't find /c/b};
+	nok find-route( $routes, '/c/1' ), q{Can't find /c/1};
+	nok find-route( $routes, '/c/c' ), q{Can't find /c/c};
 	}, q{/(all)/ vs. permutations of 2 terms};
 
 subtest sub
@@ -383,15 +383,15 @@ subtest sub
 	add-route( $routes, 32, '/', Str, '/', Int );
 	add-route( $routes, 33, '/', Str, '/', Str );
 
-	is find-route( $routes, '/', 'a', '/', 'b' ), 31, q{Can find /a/b};
-	is find-route( $routes, '/', 'a', '/', 1   ), 32, q{Can find /a/1};
-	is find-route( $routes, '/', 'a', '/', 'c' ), 33, q{Can find /a/c};
-	is find-route( $routes, '/', 1,   '/', 'b' ), 21, q{Can find /1/b};
-	is find-route( $routes, '/', 1,   '/', 1   ), 22, q{Can find /1/1};
-	is find-route( $routes, '/', 1,   '/', 'c' ), 23, q{Can find /1/c};
-	is find-route( $routes, '/', 'c', '/', 'b' ), 31, q{Can find /c/b};
-	is find-route( $routes, '/', 'c', '/', 1   ), 32, q{Can find /c/1};
-	is find-route( $routes, '/', 'c', '/', 'c' ), 33, q{Can find /c/c};
+	is find-route( $routes, '/a/b' ), 31, q{Can find /a/b};
+	is find-route( $routes, '/a/1' ), 32, q{Can find /a/1};
+	is find-route( $routes, '/a/c' ), 33, q{Can find /a/c};
+	is find-route( $routes, '/1/b' ), 21, q{Can find /1/b};
+	is find-route( $routes, '/1/1' ), 22, q{Can find /1/1};
+	is find-route( $routes, '/1/c' ), 23, q{Can find /1/c};
+	is find-route( $routes, '/c/b' ), 31, q{Can find /c/b};
+	is find-route( $routes, '/c/1' ), 32, q{Can find /c/1};
+	is find-route( $routes, '/c/c' ), 33, q{Can find /c/c};
 	}, q{/#/(all) and /*/(all)};
 
 subtest sub
@@ -405,15 +405,15 @@ subtest sub
 	add-route( $routes, 32, '/', Str, '/', Int );
 	add-route( $routes, 33, '/', Str, '/', Str );
 
-	is find-route( $routes, '/', 'a', '/', 'b' ), 11, q{Can find /a/b};
-	is find-route( $routes, '/', 'a', '/', 1   ), 12, q{Can find /a/1};
-	is find-route( $routes, '/', 'a', '/', 'c' ), 13, q{Can find /a/c};
-	is find-route( $routes, '/', 1,   '/', 'b' ), 31, q{Can find /1/b};
-	is find-route( $routes, '/', 1,   '/', 1   ), 32, q{Can find /1/1};
-	is find-route( $routes, '/', 1,   '/', 'c' ), 33, q{Can find /1/c};
-	is find-route( $routes, '/', 'c', '/', 'b' ), 31, q{Can find /c/b};
-	is find-route( $routes, '/', 'c', '/', 1   ), 32, q{Can find /c/1};
-	is find-route( $routes, '/', 'c', '/', 'c' ), 33, q{Can find /c/c};
+	is find-route( $routes, '/a/b' ), 11, q{Can find /a/b};
+	is find-route( $routes, '/a/1' ), 12, q{Can find /a/1};
+	is find-route( $routes, '/a/c' ), 13, q{Can find /a/c};
+	is find-route( $routes, '/1/b' ), 31, q{Can find /1/b};
+	is find-route( $routes, '/1/1' ), 32, q{Can find /1/1};
+	is find-route( $routes, '/1/c' ), 33, q{Can find /1/c};
+	is find-route( $routes, '/c/b' ), 31, q{Can find /c/b};
+	is find-route( $routes, '/c/1' ), 32, q{Can find /c/1};
+	is find-route( $routes, '/c/c' ), 33, q{Can find /c/c};
 	}, q{/a/(all) and /*/(all)};
 
 subtest sub
@@ -427,15 +427,15 @@ subtest sub
 	add-route( $routes, 22, '/', Int, '/', Int );
 	add-route( $routes, 23, '/', Int, '/', Str );
 
-	is find-route( $routes, '/', 'a', '/', 'b' ), 11, q{Can find /a/b};
-	is find-route( $routes, '/', 'a', '/', 1   ), 12, q{Can find /a/1};
-	is find-route( $routes, '/', 'a', '/', 'c' ), 13, q{Can find /a/c};
-	is find-route( $routes, '/', 1,   '/', 'b' ), 21, q{Can find /1/b};
-	is find-route( $routes, '/', 1,   '/', 1   ), 22, q{Can find /1/1};
-	is find-route( $routes, '/', 1,   '/', 'c' ), 23, q{Can find /1/c};
-	nok find-route( $routes, '/', 'c', '/', 'b' ), q{Can't find /c/b};
-	nok find-route( $routes, '/', 'c', '/', 1   ), q{Can't find /c/1};
-	nok find-route( $routes, '/', 'c', '/', 'c' ), q{Can't find /c/c};
+	is find-route( $routes, '/a/b' ), 11, q{Can find /a/b};
+	is find-route( $routes, '/a/1' ), 12, q{Can find /a/1};
+	is find-route( $routes, '/a/c' ), 13, q{Can find /a/c};
+	is find-route( $routes, '/1/b' ), 21, q{Can find /1/b};
+	is find-route( $routes, '/1/1' ), 22, q{Can find /1/1};
+	is find-route( $routes, '/1/c' ), 23, q{Can find /1/c};
+	nok find-route( $routes, '/c/b' ), q{Can't find /c/b};
+	nok find-route( $routes, '/c/1' ), q{Can't find /c/1};
+	nok find-route( $routes, '/c/c' ), q{Can't find /c/c};
 	}, q{/a/(all) and /#/(all)};
 
 subtest sub
@@ -452,15 +452,15 @@ subtest sub
 	add-route( $routes, 32, '/', Str, '/', Int );
 	add-route( $routes, 33, '/', Str, '/', Str );
 
-	is find-route( $routes, '/', 'a', '/', 'b' ), 11, q{Can find /a/b};
-	is find-route( $routes, '/', 'a', '/', 1   ), 12, q{Can find /a/1};
-	is find-route( $routes, '/', 'a', '/', 'c' ), 13, q{Can find /a/c};
-	is find-route( $routes, '/', 1,   '/', 'b' ), 21, q{Can find /1/b};
-	is find-route( $routes, '/', 1,   '/', 1   ), 22, q{Can find /1/1};
-	is find-route( $routes, '/', 1,   '/', 'c' ), 23, q{Can find /1/j};
-	is find-route( $routes, '/', 'c', '/', 'b' ), 31, q{Can find /c/b};
-	is find-route( $routes, '/', 'c', '/', 1   ), 32, q{Can find /c/1};
-	is find-route( $routes, '/', 'c', '/', 'c' ), 33, q{Can find /c/c};
+	is find-route( $routes, '/a/b' ), 11, q{Can find /a/b};
+	is find-route( $routes, '/a/1' ), 12, q{Can find /a/1};
+	is find-route( $routes, '/a/c' ), 13, q{Can find /a/c};
+	is find-route( $routes, '/1/b' ), 21, q{Can find /1/b};
+	is find-route( $routes, '/1/1' ), 22, q{Can find /1/1};
+	is find-route( $routes, '/1/c' ), 23, q{Can find /1/j};
+	is find-route( $routes, '/c/b' ), 31, q{Can find /c/b};
+	is find-route( $routes, '/c/1' ), 32, q{Can find /c/1};
+	is find-route( $routes, '/c/c' ), 33, q{Can find /c/c};
 	}, q{All permutations of 2 terms};
 
 done-testing;
