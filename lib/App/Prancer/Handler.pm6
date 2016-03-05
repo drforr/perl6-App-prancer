@@ -130,8 +130,6 @@ use URI;
 use Crust::Runner;
 use Crust::MIME;
 
-sub app( $env )
-	{
 #	my $uri = URI.new( "$env.<p6sgi.url-scheme>://$env.<REMOTE_HOST>$env.<PATH_INFO>?$env.<QUERY_STRING>" );
 )
 
@@ -140,6 +138,23 @@ constant HTTP-REQUEST-METHODS =
 	<DELETE GET HEAD OPTIONS PATCH POST PUT>;
 
 our $PRANCER-INTERNAL-ROUTES = App::Prancer::Routes.new;
+
+sub routine-to-handler( Routine $r )
+	{
+	my $signature = $r.signature;
+	my @parameters;
+
+	for $signature.params -> $param
+		{
+		my $rv;
+		if $param.name { $rv = '#(' ~ $param.type.perl ~ ')' }
+		else           { $rv = param-to-string( $param ) }
+
+		@parameters.append( $rv );
+		}
+
+	return @parameters
+	}
 
 sub param-to-string( $param )
 	{
@@ -157,7 +172,6 @@ sub param-to-string( $param )
 my class Route-Info
 	{
 	has Routine $.r;
-has @.path;
 	}
 
 multi sub trait_mod:<is>( Routine $r, :$handler! ) is export(:testing,:ALL)
@@ -165,13 +179,13 @@ multi sub trait_mod:<is>( Routine $r, :$handler! ) is export(:testing,:ALL)
 	my $name      = $r.name;
 	my $signature = $r.signature;
 
-	my @names = map { param-to-string( $_ ) }, $signature.params;
-	my $path = @names.join('');
-	my @path = grep { $_ ne '' }, map { ~$_ }, $path.split(/\//, :v);
+	my @names = routine-to-handler( $r );
+	my $path  = @names.join('');
+	my @path  = grep { $_ ne '' }, map { ~$_ }, $path.split(/\//, :v);
 
 	$PRANCER-INTERNAL-ROUTES.add(
 		$name, 
-		Route-Info.new(:r($r),:path(@path)),
+		Route-Info.new(:r($r)), # XXX For expansion purposes
 		@path
 		);
 	}

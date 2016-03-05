@@ -10,7 +10,7 @@ use App::Prancer::Handler :testing;
 multi GET( '/' ) is handler { 'GET / HTTP/1.0 OK' }
 multi GET( '/', 'a' ) is handler { 'GET /a HTTP/1.0 OK' }
 multi GET( '/', 'b' ) is handler { 'GET /b HTTP/1.0 OK' }
-#multi GET( '/', Int $x ) is handler { "GET /$x HTTP/1.0 OK" }
+multi GET( '/', Int $x ) is handler { "GET /$x HTTP/1.0 OK" }
 multi GET( '/', 'a', '/' ) is handler { 'GET /a/ HTTP/1.0 OK' }
 multi GET( '/', 'b', '/' ) is handler { 'GET /b/ HTTP/1.0 OK' }
 
@@ -35,6 +35,9 @@ test-psgi
 		is content-from( $cb, 'GET', '/b' ),
 			q{GET /b HTTP/1.0 OK},
 			q{GET /b};
+#		is content-from( $cb, 'GET', '/1' ),
+#			q{GET /#1 HTTP/1.0 OK},
+#			q{GET /1};
 		is content-from( $cb, 'GET', '/a/' ),
 			q{GET /a/ HTTP/1.0 OK},
 			q{GET /a/};
