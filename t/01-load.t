@@ -2,8 +2,7 @@ use v6;
 
 use Test;
 
-plan 1;
+plan 2;
 
-use App::Prancer::Handler;
-
-ok 1, "'use App::Prancer::Handler' worked!";
+use-ok 'App::Prancer::Handler';
+use-ok 'App::Prancer::Routes';

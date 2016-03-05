@@ -233,7 +233,7 @@ sub find-element( $trie, $element )
 	return False;
 	}
 
-sub find-route( Hash $trie, $path ) is export(:testing)
+sub find-route( Hash $trie, Str $path ) is export(:testing)
 	{
 	my @path = grep { $_ ne '' }, map { ~$_ }, $path.split(/\//, :v);
 	return False if @path.elems == 0;

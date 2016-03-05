@@ -1,6 +1,7 @@
 use v6;
 use Test;
 use App::Prancer::Handler :testing;
+use App::Prancer::Routes;
 
 plan 11;
 
@@ -13,38 +14,38 @@ subtest sub
 	{
 	plan 14;
 
-	my $routes = {};
+	my $r = App::Prancer::Routes.new;
 
-	is-deeply $routes, { },
+	is-deeply $r.routes.<GET>, { },
 		q{Null hypothesis};
 
-	add-route( $routes, 1, '/' );
+	$r.add( 'GET', 1, '/' );
 
-	is-deeply $routes,
+	is-deeply $r.routes.<GET>,
 		{ '/' =>
 		  { '' => 1 } },
 		q{Insert '/'};
 
-	add-route( $routes, 2, '/', 'a' );
+	$r.add( 'GET', 2, '/', 'a' );
 
-	is-deeply $routes,
+	is-deeply $r.routes.<GET>,
 		{ '/' =>
 		  { ''  => 1,
 		    'a' => { '' => 2 } } },
 		q{Insert '/a'};
 
-	add-route( $routes, 100, '/', Str );
+	$r.add( 'GET', 100, '/', Str );
 
-	is-deeply $routes,
+	is-deeply $r.routes.<GET>,
 		{ '/' =>
 		  { ''       => 1,
 		    'a'      => { '' => 2 },
 		    '#(Str)' => { '' => 100 } } },
 		q{Insert '/*'};
 
-	add-route( $routes, 1000, '/', Int );
+	$r.add( 'GET', 1000, '/', Int );
 
-	is-deeply $routes,
+	is-deeply $r.routes.<GET>,
 		{ '/' =>
 		  { ''       => 1,
 		    'a'      => { '' => 2 },
@@ -52,9 +53,9 @@ subtest sub
 		    '#(Int)' => { '' => 1000 } } },
 		q{Insert '/1'};
 
-	add-route( $routes, 4, '/', 'b' );
+	$r.add( 'GET', 4, '/', 'b' );
 
-	is-deeply $routes,
+	is-deeply $r.routes.<GET>,
 		{ '/' =>
 		  { ''       => 1,
 		    'a'      => { '' => 2 },
@@ -63,9 +64,9 @@ subtest sub
 		    'b'      => { '' => 4 } } },
 		q{Insert '/b'};
 
-	add-route( $routes, 5, '/', 'c', '/' );
+	$r.add( 'GET', 5, '/', 'c', '/' );
 
-	is-deeply $routes,
+	is-deeply $r.routes.<GET>,
 		{ '/' =>
 		  { ''       => 1,
 		    'a'      => { ''  => 2 },
@@ -75,9 +76,9 @@ subtest sub
 		    'c'      => { '/' => { '' => 5 } } } },
 		q{Insert '/c/'};
 
-	add-route( $routes, 101, '/', Str, '/' );
+	$r.add( 'GET', 101, '/', Str, '/' );
 
-	is-deeply $routes,
+	is-deeply $r.routes.<GET>,
 		{ '/' =>
 		  { ''       => 1,
 		    'a'      => { ''  => 2 },
@@ -88,9 +89,9 @@ subtest sub
 		    'c'      => { '/' => { '' => 5 } } } },
 		q{Insert '/*/'};
 
-	add-route( $routes, 1001, '/', Int, '/' );
+	$r.add( 'GET', 1001, '/', Int, '/' );
 
-	is-deeply $routes,
+	is-deeply $r.routes.<GET>,
 		{ '/' =>
 		  { ''       => 1,
 		    'a'      => { ''  => 2 },
@@ -102,9 +103,9 @@ subtest sub
 		    'c'      => { '/' => { '' => 5 } } } },
 		q{Insert '/1/'};
 
-	add-route( $routes, 7, '/', 'd', '/', 'e' );
+	$r.add( 'GET', 7, '/', 'd', '/', 'e' );
 
-	is-deeply $routes,
+	is-deeply $r.routes.<GET>,
 		{ '/' =>
 		  { ''       => 1,
 		    'a'      => { ''  => 2 },
@@ -117,9 +118,9 @@ subtest sub
 		    'd'      => { '/' => { 'e' => { '' => 7 } } } } },
 		q{Insert '/d/e'};
 
-	add-route( $routes, 102, '/', Str, '/', 'f' );
+	$r.add( 'GET', 102, '/', Str, '/', 'f' );
 
-	is-deeply $routes,
+	is-deeply $r.routes.<GET>,
 		{ '/' =>
 		  { ''       => 1,
 		    'a'      => { ''  => 2 },
@@ -133,9 +134,9 @@ subtest sub
 		    'd'      => { '/' => { 'e' => { '' => 7 } } } } },
 		q{Insert '/*/f'};
 
-	add-route( $routes, 1002, '/', Int, '/', 'f' );
+	$r.add( 'GET', 1002, '/', Int, '/', 'f' );
 
-	is-deeply $routes,
+	is-deeply $r.routes.<GET>,
 		{ '/' =>
 		  { ''       => 1,
 		    'a'      => { ''  => 2 },
@@ -150,9 +151,9 @@ subtest sub
 		    'd'      => { '/' => { 'e' => { '' => 7 } } } } },
 		q{Insert '/*/f'};
 
-	add-route( $routes, 103, '/', 'g', '/', Str );
+	$r.add( 'GET', 103, '/', 'g', '/', Str );
 
-	is-deeply $routes,
+	is-deeply $r.routes.<GET>,
 		{ '/' =>
 		  { ''       => 1,
 		    'a'      => { ''  => 2 },
@@ -168,9 +169,9 @@ subtest sub
 		    'g'      => { '/' => { '#(Str)' => { '' => 103 } } } } },
 		q{Insert '/g/*'};
 
-	add-route( $routes, 104, '/', Str, '/', Str );
+	$r.add( 'GET', 104, '/', Str, '/', Str );
 
-	is-deeply $routes,
+	is-deeply $r.routes.<GET>,
 		{ '/' =>
 		  { ''       => 1,
 		    'a'      => { ''  => 2 },
@@ -195,23 +196,23 @@ subtest sub
 	{
 	plan 1;
 
-	my $routes = {};
+	my $r = App::Prancer::Routes.new;
 
-	add-route( $routes, 104,  '/', Str, '/', Str );
-	add-route( $routes, 103,  '/', 'g', '/', Str );
-	add-route( $routes, 1002, '/', Int, '/', 'f' );
-	add-route( $routes, 102,  '/', Str, '/', 'f' );
-	add-route( $routes, 7,    '/', 'd', '/', 'e' );
-	add-route( $routes, 1001, '/', Int, '/' );
-	add-route( $routes, 101,  '/', Str, '/' );
-	add-route( $routes, 5,    '/', 'c', '/' );
-	add-route( $routes, 4,    '/', 'b' );
-	add-route( $routes, 1000, '/', Int );
-	add-route( $routes, 100,  '/', Str );
-	add-route( $routes, 2,    '/', 'a' );
-	add-route( $routes, 1,    '/' );
+	$r.add( 'GET', 104,  '/', Str, '/', Str );
+	$r.add( 'GET', 103,  '/', 'g', '/', Str );
+	$r.add( 'GET', 1002, '/', Int, '/', 'f' );
+	$r.add( 'GET', 102,  '/', Str, '/', 'f' );
+	$r.add( 'GET', 7,    '/', 'd', '/', 'e' );
+	$r.add( 'GET', 1001, '/', Int, '/' );
+	$r.add( 'GET', 101,  '/', Str, '/' );
+	$r.add( 'GET', 5,    '/', 'c', '/' );
+	$r.add( 'GET', 4,    '/', 'b' );
+	$r.add( 'GET', 1000, '/', Int );
+	$r.add( 'GET', 100,  '/', Str );
+	$r.add( 'GET', 2,    '/', 'a' );
+	$r.add( 'GET', 1,    '/' );
 
-	is-deeply $routes,
+	is-deeply $r.routes.<GET>,
 		{ '/' =>
 		  { '' => 1,
 		    'a'      => { ''  => 2 },
@@ -234,23 +235,23 @@ subtest sub
 	{
 	plan 1;
 
-	my $routes = :{};
+	my $r = App::Prancer::Routes.new;
 
-	add-route( $routes, 104,  '/', Str, '/', Str );
-	add-route( $routes, 103,  '/', 'g', '/', Str );
-	add-route( $routes, 1002, '/', Int, '/', 'f' );
-	add-route( $routes, 102,  '/', Str, '/', 'f' );
-	add-route( $routes, 7,    '/', 'd', '/', 'e' );
-	add-route( $routes, 1001, '/', Int, '/' );
-	add-route( $routes, 101,  '/', Str, '/' );
-	add-route( $routes, 5,    '/', 'c', '/' );
-	add-route( $routes, 4,    '/', 'b' );
-	add-route( $routes, 1000, '/', Int );
-	add-route( $routes, 100,  '/', Str );
-	add-route( $routes, 2,    '/', 'a' );
-	add-route( $routes, 1,    '/' );
+	$r.add( 'GET', 104,  '/', Str, '/', Str );
+	$r.add( 'GET', 103,  '/', 'g', '/', Str );
+	$r.add( 'GET', 1002, '/', Int, '/', 'f' );
+	$r.add( 'GET', 102,  '/', Str, '/', 'f' );
+	$r.add( 'GET', 7,    '/', 'd', '/', 'e' );
+	$r.add( 'GET', 1001, '/', Int, '/' );
+	$r.add( 'GET', 101,  '/', Str, '/' );
+	$r.add( 'GET', 5,    '/', 'c', '/' );
+	$r.add( 'GET', 4,    '/', 'b' );
+	$r.add( 'GET', 1000, '/', Int );
+	$r.add( 'GET', 100,  '/', Str );
+	$r.add( 'GET', 2,    '/', 'a' );
+	$r.add( 'GET', 1,    '/' );
 
-	is-deeply [ list-routes( $routes ) ],
+	is-deeply [ $r.list( 'GET' ) ],
 		[
 		'/',
 		'/#(Int)',
@@ -271,64 +272,52 @@ subtest sub
 
 subtest sub
 	{
-	my $routes = {};
-	nok find-route( $routes, '/' ),
+	my $r = App::Prancer::Routes.new;
+
+	nok $r.find( 'GET', '/' ),
 		q{Can't find route '/' with no routes specified};
-	nok find-route( $routes, '/a' ),
+	nok $r.find( 'GET', '/a' ),
 		q{Can't find route '/a' with no routes specified};
-	nok find-route( $routes, '/1' ),
+	nok $r.find( 'GET', '/1' ),
 		q{Can't find route '/1' with no routes specified};
 
-	add-route( $routes, 1, '/' );
+	$r.add( 'GET', 1, '/' );
 	diag q{Adding default route};
 
-	is find-route( $routes, '/' ), 1,
-		q{Can find default route};
-	nok find-route( $routes, '/a' ),
-		q{Can't find route '/a' with default route};
-	nok find-route( $routes, '/1' ),
-		q{Can't find route '/1' with default route};
+	is $r.find( 'GET', '/' ), 1, q{Can find default route};
+	nok $r.find( 'GET', '/a' ), q{Can't find route '/a' with default route};
+	nok $r.find( 'GET', '/1' ), q{Can't find route '/1' with default route};
 
 	}, q{Find default route};
 
 subtest sub
 	{
-	my $routes = {};
+	my $r = App::Prancer::Routes.new;
 
-	add-route( $routes, 1, '/' );
+	$r.add( 'GET', 1, '/' );
 	diag q{Adding default route};
 
-	add-route( $routes, 2, '/', Str );
+	$r.add( 'GET', 2, '/', Str );
 	diag q{Adding '/*' route};
 
-	is find-route( $routes, '/' ), 1,
-		q{Can find default route};
-	is find-route( $routes, '/a' ), 2,
-		q{Can find route '/a' with wildcard};
-	is find-route( $routes, '/1' ), 2,
-		q{Can find route '/1' with wildcard};
+	is $r.find( 'GET', '/' ), 1, q{Can find default route};
+	is $r.find( 'GET', '/a' ), 2, q{Can find route '/a' with wildcard};
+	is $r.find( 'GET', '/1' ), 2, q{Can find route '/1' with wildcard};
 
-	add-route( $routes, 3, '/', Int );
+	$r.add( 'GET', 3, '/', Int );
 	diag q{Adding '/#' route};
 
-	is find-route( $routes, '/' ), 1,
-		q{Can find default route};
-	is find-route( $routes, '/a' ), 2,
-		q{Can find route '/a' with '/*' wildcard};
-	is find-route( $routes, '/1' ), 3,
-		q{Can find route '/1' with '/#' wildcard};
+	is $r.find( 'GET', '/' ), 1, q{Can find default route};
+	is $r.find( 'GET', '/a' ), 2, q{Can find route '/a' with '/*' wildcard};
+	is $r.find( 'GET', '/1' ), 3, q{Can find route '/1' with '/#' wildcard};
 
-	add-route( $routes, 4, '/', 'a' );
+	$r.add( 'GET', 4, '/', 'a' );
 	diag q{Adding '/a' route};
 
-	is find-route( $routes, '/' ), 1,
-		q{Can find default route};
-	is find-route( $routes, '/b' ), 2,
-		q{Can find route '/b' with '/*' wildcard};
-	is find-route( $routes, '/1' ), 3,
-		q{Can find route '/1' with '/#' wildcard};
-	is find-route( $routes, '/a' ), 4,
-		q{Can find route '/a' with '/a' route};
+	is $r.find( 'GET', '/' ), 1, q{Can find default route};
+	is $r.find( 'GET', '/b' ), 2, q{Can find route '/b' with '/*' wildcard};
+	is $r.find( 'GET', '/1' ), 3, q{Can find route '/1' with '/#' wildcard};
+	is $r.find( 'GET', '/a' ), 4, q{Can find route '/a' with '/a' route};
 
 	}, q{Find /foo routes};
 
@@ -336,131 +325,131 @@ diag "MUST ADD /a/ TESTS AS WELL.";
 
 subtest sub
 	{
-	my $routes = {};
+	my $r = App::Prancer::Routes.new;
 
-	add-route( $routes, 1, '/', 'a' );
-	add-route( $routes, 2, '/', Int );
-	add-route( $routes, 3, '/', Str );
+	$r.add( 'GET', 1, '/', 'a' );
+	$r.add( 'GET', 2, '/', Int );
+	$r.add( 'GET', 3, '/', Str );
 
-	nok find-route( $routes, '/a/b' ), q{Can't find /a/b};
-	nok find-route( $routes, '/a/1' ), q{Can't find /a/1};
-	nok find-route( $routes, '/a/c' ), q{Can't find /a/c};
-	nok find-route( $routes, '/1/b' ), q{Can't find /1/b};
-	nok find-route( $routes, '/1/1' ), q{Can't find /1/1};
-	nok find-route( $routes, '/1/c' ), q{Can't find /1/c};
-	nok find-route( $routes, '/c/b' ), q{Can't find /c/b};
-	nok find-route( $routes, '/c/1' ), q{Can't find /c/1};
-	nok find-route( $routes, '/c/c' ), q{Can't find /c/c};
+	nok $r.find( 'GET', '/a/b' ), q{Can't find /a/b};
+	nok $r.find( 'GET', '/a/1' ), q{Can't find /a/1};
+	nok $r.find( 'GET', '/a/c' ), q{Can't find /a/c};
+	nok $r.find( 'GET', '/1/b' ), q{Can't find /1/b};
+	nok $r.find( 'GET', '/1/1' ), q{Can't find /1/1};
+	nok $r.find( 'GET', '/1/c' ), q{Can't find /1/c};
+	nok $r.find( 'GET', '/c/b' ), q{Can't find /c/b};
+	nok $r.find( 'GET', '/c/1' ), q{Can't find /c/1};
+	nok $r.find( 'GET', '/c/c' ), q{Can't find /c/c};
 	}, q{/(all) vs. permutations of 2 terms};
 
 subtest sub
 	{
-	my $routes = {};
+	my $r = App::Prancer::Routes.new;
 
-	add-route( $routes, 1, '/', 'a', '/' );
-	add-route( $routes, 2, '/', Int, '/' );
-	add-route( $routes, 3, '/', Str, '/' );
+	$r.add( 'GET', 1, '/', 'a', '/' );
+	$r.add( 'GET', 2, '/', Int, '/' );
+	$r.add( 'GET', 3, '/', Str, '/' );
 
-	nok find-route( $routes, '/a/b' ), q{Can't find /a/b};
-	nok find-route( $routes, '/a/1' ), q{Can't find /a/1};
-	nok find-route( $routes, '/a/c' ), q{Can't find /a/c};
-	nok find-route( $routes, '/1/b' ), q{Can't find /1/b};
-	nok find-route( $routes, '/1/1' ), q{Can't find /1/1};
-	nok find-route( $routes, '/1/c' ), q{Can't find /1/c};
-	nok find-route( $routes, '/c/b' ), q{Can't find /c/b};
-	nok find-route( $routes, '/c/1' ), q{Can't find /c/1};
-	nok find-route( $routes, '/c/c' ), q{Can't find /c/c};
+	nok $r.find( 'GET', '/a/b' ), q{Can't find /a/b};
+	nok $r.find( 'GET', '/a/1' ), q{Can't find /a/1};
+	nok $r.find( 'GET', '/a/c' ), q{Can't find /a/c};
+	nok $r.find( 'GET', '/1/b' ), q{Can't find /1/b};
+	nok $r.find( 'GET', '/1/1' ), q{Can't find /1/1};
+	nok $r.find( 'GET', '/1/c' ), q{Can't find /1/c};
+	nok $r.find( 'GET', '/c/b' ), q{Can't find /c/b};
+	nok $r.find( 'GET', '/c/1' ), q{Can't find /c/1};
+	nok $r.find( 'GET', '/c/c' ), q{Can't find /c/c};
 	}, q{/(all)/ vs. permutations of 2 terms};
 
 subtest sub
 	{
-	my $routes = {};
+	my $r = App::Prancer::Routes.new;
 
-	add-route( $routes, 21, '/', Int, '/', 'b' );
-	add-route( $routes, 22, '/', Int, '/', Int );
-	add-route( $routes, 23, '/', Int, '/', Str );
-	add-route( $routes, 31, '/', Str, '/', 'b' );
-	add-route( $routes, 32, '/', Str, '/', Int );
-	add-route( $routes, 33, '/', Str, '/', Str );
+	$r.add( 'GET', 21, '/', Int, '/', 'b' );
+	$r.add( 'GET', 22, '/', Int, '/', Int );
+	$r.add( 'GET', 23, '/', Int, '/', Str );
+	$r.add( 'GET', 31, '/', Str, '/', 'b' );
+	$r.add( 'GET', 32, '/', Str, '/', Int );
+	$r.add( 'GET', 33, '/', Str, '/', Str );
 
-	is find-route( $routes, '/a/b' ), 31, q{Can find /a/b};
-	is find-route( $routes, '/a/1' ), 32, q{Can find /a/1};
-	is find-route( $routes, '/a/c' ), 33, q{Can find /a/c};
-	is find-route( $routes, '/1/b' ), 21, q{Can find /1/b};
-	is find-route( $routes, '/1/1' ), 22, q{Can find /1/1};
-	is find-route( $routes, '/1/c' ), 23, q{Can find /1/c};
-	is find-route( $routes, '/c/b' ), 31, q{Can find /c/b};
-	is find-route( $routes, '/c/1' ), 32, q{Can find /c/1};
-	is find-route( $routes, '/c/c' ), 33, q{Can find /c/c};
+	is $r.find( 'GET', '/a/b' ), 31, q{Can find /a/b};
+	is $r.find( 'GET', '/a/1' ), 32, q{Can find /a/1};
+	is $r.find( 'GET', '/a/c' ), 33, q{Can find /a/c};
+	is $r.find( 'GET', '/1/b' ), 21, q{Can find /1/b};
+	is $r.find( 'GET', '/1/1' ), 22, q{Can find /1/1};
+	is $r.find( 'GET', '/1/c' ), 23, q{Can find /1/c};
+	is $r.find( 'GET', '/c/b' ), 31, q{Can find /c/b};
+	is $r.find( 'GET', '/c/1' ), 32, q{Can find /c/1};
+	is $r.find( 'GET', '/c/c' ), 33, q{Can find /c/c};
 	}, q{/#/(all) and /*/(all)};
 
 subtest sub
 	{
-	my $routes = {};
+	my $r = App::Prancer::Routes.new;
 
-	add-route( $routes, 11, '/', 'a', '/', 'b' );
-	add-route( $routes, 12, '/', 'a', '/', Int );
-	add-route( $routes, 13, '/', 'a', '/', Str );
-	add-route( $routes, 31, '/', Str, '/', 'b' );
-	add-route( $routes, 32, '/', Str, '/', Int );
-	add-route( $routes, 33, '/', Str, '/', Str );
+	$r.add( 'GET', 11, '/', 'a', '/', 'b' );
+	$r.add( 'GET', 12, '/', 'a', '/', Int );
+	$r.add( 'GET', 13, '/', 'a', '/', Str );
+	$r.add( 'GET', 31, '/', Str, '/', 'b' );
+	$r.add( 'GET', 32, '/', Str, '/', Int );
+	$r.add( 'GET', 33, '/', Str, '/', Str );
 
-	is find-route( $routes, '/a/b' ), 11, q{Can find /a/b};
-	is find-route( $routes, '/a/1' ), 12, q{Can find /a/1};
-	is find-route( $routes, '/a/c' ), 13, q{Can find /a/c};
-	is find-route( $routes, '/1/b' ), 31, q{Can find /1/b};
-	is find-route( $routes, '/1/1' ), 32, q{Can find /1/1};
-	is find-route( $routes, '/1/c' ), 33, q{Can find /1/c};
-	is find-route( $routes, '/c/b' ), 31, q{Can find /c/b};
-	is find-route( $routes, '/c/1' ), 32, q{Can find /c/1};
-	is find-route( $routes, '/c/c' ), 33, q{Can find /c/c};
+	is $r.find( 'GET', '/a/b' ), 11, q{Can find /a/b};
+	is $r.find( 'GET', '/a/1' ), 12, q{Can find /a/1};
+	is $r.find( 'GET', '/a/c' ), 13, q{Can find /a/c};
+	is $r.find( 'GET', '/1/b' ), 31, q{Can find /1/b};
+	is $r.find( 'GET', '/1/1' ), 32, q{Can find /1/1};
+	is $r.find( 'GET', '/1/c' ), 33, q{Can find /1/c};
+	is $r.find( 'GET', '/c/b' ), 31, q{Can find /c/b};
+	is $r.find( 'GET', '/c/1' ), 32, q{Can find /c/1};
+	is $r.find( 'GET', '/c/c' ), 33, q{Can find /c/c};
 	}, q{/a/(all) and /*/(all)};
 
 subtest sub
 	{
-	my $routes = {};
+	my $r = App::Prancer::Routes.new;
 
-	add-route( $routes, 11, '/', 'a', '/', 'b' );
-	add-route( $routes, 12, '/', 'a', '/', Int );
-	add-route( $routes, 13, '/', 'a', '/', Str );
-	add-route( $routes, 21, '/', Int, '/', 'b' );
-	add-route( $routes, 22, '/', Int, '/', Int );
-	add-route( $routes, 23, '/', Int, '/', Str );
+	$r.add( 'GET', 11, '/', 'a', '/', 'b' );
+	$r.add( 'GET', 12, '/', 'a', '/', Int );
+	$r.add( 'GET', 13, '/', 'a', '/', Str );
+	$r.add( 'GET', 21, '/', Int, '/', 'b' );
+	$r.add( 'GET', 22, '/', Int, '/', Int );
+	$r.add( 'GET', 23, '/', Int, '/', Str );
 
-	is find-route( $routes, '/a/b' ), 11, q{Can find /a/b};
-	is find-route( $routes, '/a/1' ), 12, q{Can find /a/1};
-	is find-route( $routes, '/a/c' ), 13, q{Can find /a/c};
-	is find-route( $routes, '/1/b' ), 21, q{Can find /1/b};
-	is find-route( $routes, '/1/1' ), 22, q{Can find /1/1};
-	is find-route( $routes, '/1/c' ), 23, q{Can find /1/c};
-	nok find-route( $routes, '/c/b' ), q{Can't find /c/b};
-	nok find-route( $routes, '/c/1' ), q{Can't find /c/1};
-	nok find-route( $routes, '/c/c' ), q{Can't find /c/c};
+	is $r.find( 'GET', '/a/b' ), 11, q{Can find /a/b};
+	is $r.find( 'GET', '/a/1' ), 12, q{Can find /a/1};
+	is $r.find( 'GET', '/a/c' ), 13, q{Can find /a/c};
+	is $r.find( 'GET', '/1/b' ), 21, q{Can find /1/b};
+	is $r.find( 'GET', '/1/1' ), 22, q{Can find /1/1};
+	is $r.find( 'GET', '/1/c' ), 23, q{Can find /1/c};
+	nok $r.find( 'GET', '/c/b' ), q{Can't find /c/b};
+	nok $r.find( 'GET', '/c/1' ), q{Can't find /c/1};
+	nok $r.find( 'GET', '/c/c' ), q{Can't find /c/c};
 	}, q{/a/(all) and /#/(all)};
 
 subtest sub
 	{
-	my $routes = {};
+	my $r = App::Prancer::Routes.new;
 
-	add-route( $routes, 11, '/', 'a', '/', 'b' );
-	add-route( $routes, 12, '/', 'a', '/', Int );
-	add-route( $routes, 13, '/', 'a', '/', Str );
-	add-route( $routes, 21, '/', Int, '/', 'b' );
-	add-route( $routes, 22, '/', Int, '/', Int );
-	add-route( $routes, 23, '/', Int, '/', Str );
-	add-route( $routes, 31, '/', Str, '/', 'b' );
-	add-route( $routes, 32, '/', Str, '/', Int );
-	add-route( $routes, 33, '/', Str, '/', Str );
+	$r.add( 'GET', 11, '/', 'a', '/', 'b' );
+	$r.add( 'GET', 12, '/', 'a', '/', Int );
+	$r.add( 'GET', 13, '/', 'a', '/', Str );
+	$r.add( 'GET', 21, '/', Int, '/', 'b' );
+	$r.add( 'GET', 22, '/', Int, '/', Int );
+	$r.add( 'GET', 23, '/', Int, '/', Str );
+	$r.add( 'GET', 31, '/', Str, '/', 'b' );
+	$r.add( 'GET', 32, '/', Str, '/', Int );
+	$r.add( 'GET', 33, '/', Str, '/', Str );
 
-	is find-route( $routes, '/a/b' ), 11, q{Can find /a/b};
-	is find-route( $routes, '/a/1' ), 12, q{Can find /a/1};
-	is find-route( $routes, '/a/c' ), 13, q{Can find /a/c};
-	is find-route( $routes, '/1/b' ), 21, q{Can find /1/b};
-	is find-route( $routes, '/1/1' ), 22, q{Can find /1/1};
-	is find-route( $routes, '/1/c' ), 23, q{Can find /1/j};
-	is find-route( $routes, '/c/b' ), 31, q{Can find /c/b};
-	is find-route( $routes, '/c/1' ), 32, q{Can find /c/1};
-	is find-route( $routes, '/c/c' ), 33, q{Can find /c/c};
+	is $r.find( 'GET', '/a/b' ), 11, q{Can find /a/b};
+	is $r.find( 'GET', '/a/1' ), 12, q{Can find /a/1};
+	is $r.find( 'GET', '/a/c' ), 13, q{Can find /a/c};
+	is $r.find( 'GET', '/1/b' ), 21, q{Can find /1/b};
+	is $r.find( 'GET', '/1/1' ), 22, q{Can find /1/1};
+	is $r.find( 'GET', '/1/c' ), 23, q{Can find /1/j};
+	is $r.find( 'GET', '/c/b' ), 31, q{Can find /c/b};
+	is $r.find( 'GET', '/c/1' ), 32, q{Can find /c/1};
+	is $r.find( 'GET', '/c/c' ), 33, q{Can find /c/c};
 	}, q{All permutations of 2 terms};
 
 done-testing;
