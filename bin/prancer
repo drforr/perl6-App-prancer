@@ -3,6 +3,12 @@
 use v6;
 use App::Prancer::Handler;
 
+#multi GET( '/foo' ) is handler { }
+multi GET( '/a', '/d' ) is handler { }
+multi GET( '/b' ) is handler { }
+multi GET( '/c' ) is handler { }
+
+#`(
 #
 # The equivalent of **, *@rest captures the path and puts it into @rest.
 #
@@ -129,6 +135,7 @@ multi GET( '/profile' ) is handler { }
 multi POST( '/profile' ) is handler { }
 
 multi GET( Str $x ) is handler { "Caught $x" }
+)
 
 multi MAIN( 'build-skeleton', Str:D $app-name )
 	{

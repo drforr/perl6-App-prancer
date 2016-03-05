@@ -59,65 +59,86 @@ the rest of the path. Not a slurpy array though, that does something different.
 
 =head1 Ordering
 
-=head1 Query arguments
+=head1 Arguments
 
-Of course, any method can take arguments afterward. You can generally access
-those in two ways. Declare a C<$QUERY> parameter if you want to capture all
-of the arguments from the URL. Note that this is a C<Hash::MultiValue> object
-because there may be more than one instance of an argument in the URL. There
-probably shouldn't be, but there's no accounting for taste, or malicious users
-trying to inject data.
+=head2 Query arguments
 
-    GET /post/?slug=my_amazing_post&id=1 HTTP/1.1
-    multi GET( 'post', $QUERY ) is handler
-      { return "/post/?slug=$QUERY.<slug>\&id=$QUERY.<id>" }
-
-Your existing HTML may already pass in an argument named C<QUERY>, so feel free
-to use the destructuring-bind version of the call, if that's the case. Or just
-check the global %QUERY hash. (This may change, once I figure out a better way
-to pass out-of-band information to your function.)
+Of course, any method can take query arguments. Rather than cluttering up the
+argument list, just use the C<$*QUERY> variable to check the query arguments.
+This will be a C<Hash::MultiValue> object as keys can occur multiple times in
+a given query.
 
     GET /post/?slug=my_amazing_post&id=1 HTTP/1.1
-    multi GET( 'post', [ $slug, $id ] ) is handler
-      { return "/post/?slug=$slug\&id=$id" }
+    multi GET( 'post' ) is handler
+      { return "/post/?slug=$*QUERY.<slug>\&id=$*QUERY.<id>" }
 
-=head1 Form parameters
+=head2 Form parameters
 
-It's common for forms to have parameters in their bodies, so we pass back
-either C<$BODY> for that, or pass the variables back to the destructuring-bind
-arguments.
+Likewise, C<POST> methods have form content, so look for that in the C<$*BODY>
+argument.
 
     POST /post HTTP/1.1 [slug=value, id=value]
-    multi POST( 'post', $QUERY ) is handler
-      { return "/post/?slug=$QUERY.<slug>\&id=$QUERY.<id>" }
-    multi POST( 'post', [ $slug, $id ] ) is handler
-      { return "/post/?slug=$slug\&id=$id" }
+    multi POST( 'post' ) is handler
+      { return "/post/?slug=$BODY.<slug>\&id=$BODY.<id>" }
+
+=head2 Cookies
+
+If you need session management, you can use C<App::Prancer::Plugin::Session>
+and add C<$*SESSION> to manipulate user sessions. Otherwise use C<$*COOKIES>
+to view and update cookies.
 
 =head1 Fallback
 
 Ultimately if none of these methods work for your URL, you can always ask to
-have the original L<Crust> C<$env> variable passed to you:
+have the original L<Crust> C<$env> variable passed to you in C<%*ENV>:
 
     POST /post HTTP/1.1 [slug=value, id=value]
-    multi POST( 'post', $CRUST_ENV ) is handler
-      { return "/post/?slug=$CRUST_ENV.post_parameters.<slug>" }
+    multi POST( 'post' ) is handler
+      { return "/post/?slug=$*ENV.post_parameters.<slug>" }
 
 =head1 Calling order
 
-Generally L<Prancer> tries to call the most specific method it can for a given
-URL. Literal parameters (C<'foo'>) are tried first, followed by regular
-expressions, then types, followed by untyped parameters. If all else fails,
-the array fallbacks are checked. If those should fail, it looks in the C<static>
-directory for files to serve, otherwise it throws a 404 message.
+=over
+
+=item Static files
+
+=item Dynamic routes with only literal terms
+
+=item Dynamic routes with variables that aren't C<Int> or C<Str>
+
+=item Dynamic routes with C<Int> variables
+
+=item Dynamic routes with C<Str> variables
+
+=item Otherwise a 404 File Not Found response is returned.
+
+=back
+
+Parameters are checked from left to right, so if two or more handlers can match
+a given path, the one that matches the first term wins. Take a look at
+C<find-route> in L<App::Prancer::Handler> for more information, or see the test
+suite.
 
 =end pod
 
-use URI;
-use App::Prancer::StateMachine;
+#`(
+#use Crust::Handler::HTTP::Server::Tiny;
 
-constant HTTP-REQUEST-METHODS = <DELETE GET HEAD OPTIONS PATCH POST PUT>;
-my %handler =
-	(
+use URI;
+use Crust::Runner;
+use Crust::MIME;
+
+sub app( $env )
+	{
+#	my $uri = URI.new( "$env.<p6sgi.url-scheme>://$env.<REMOTE_HOST>$env.<PATH_INFO>?$env.<QUERY_STRING>" );
+)
+
+constant STATIC-DIRECTORY = 'static';
+constant HTTP-REQUEST-METHODS =
+	<DELETE GET HEAD OPTIONS PATCH POST PUT>;
+
+our $PRANCER-INTERNAL-ROUTES is export(:testing) =
+	{
 	DELETE  => { },
 	GET     => { },
 	HEAD    => { },
@@ -125,289 +146,185 @@ my %handler =
 	PATCH   => { },
 	POST    => { },
 	PUT     => { },
-	);
+	};
 
-my %MIME-type =
-	(
-	'html'  => 'text/html',
-	'htm'   => 'text/html',
-	'xhtml' => 'text/html',
-	'jpg'	=> 'image/jpeg',
-	'png'	=> 'image/png',
-	);
-
-class App::Prancer::Handler
+sub param-to-string( $param )
 	{
-	has Bool $!verbose          = False;
-	has Bool $!trace            = False;
-	has Str  $!static-directory = 'static';
+	my $path-element;
 
-	use Crust::Runner;
-	my $state-machine = App::Prancer::StateMachine.new;
-
-	method MIME-type( $filename )
+	# XXX Not sure why this is necessary, except for
+	# XXX $param.constraints being a junction
+	#
+	for $param.constraints -> $constraint
 		{
-		return 'text/plain' unless $filename ~~ / \.( .+ ) $/;
-		return %MIME-type{$0} if %MIME-type{$0};
-		return 'text/plain';
-		}
-
-	method serve-static( Str $static-directory, $env )
-		{
-		my $file = $static-directory ~ $env.<PATH_INFO>;
-		my $MIME-type = self.MIME-type( $file );
-
-		if $file.IO.e and not $file.IO.d
-			{
-			return 200,
-				[ 'Content-Type' => $MIME-type ],
-				[ $file.IO.slurp ]
-			}
-		}
-
-	method find-in-trie( $trie, @path )
-		{
-		my $temp = $trie;
-		my @args;
-
-		for @path -> $element
-			{
-			$element ~~ / ^ \/ ( .* ) $ /;
-			if $temp{$element}
-				{
-				$temp = $temp{$element};
-				push @args, $element;
-				}
-			elsif $temp{$0}
-				{
-				$temp = $temp{$0};
-				push @args, $0;
-				}
-			elsif $temp{'*(Int)*'} and +$0
-				{
-				$temp = $temp{'*(Int)*'};
-				push @args, Int;
-				}
-			elsif $temp{'*(Str)*'}
-				{
-				$temp = $temp{'*(Str)*'};
-				push @args, Str;
-				}
-			else
-				{
-				return
-				}
-
-			return unless $temp
-			}
-		return unless $temp;
-
-		my $r = $temp{'*(Routine)*'};
-
-		return [ $r, @args ];
-		}
-
-	method display-handlers( )
-		{
-		return unless $!verbose;
-
-		say self.display-trie(%handler{$_}, $_) for %handler.keys;
-		}
-
-	method make-app( )
-		{
-		self.display-handlers;
-
-		return sub ( $env )
-			{
-			my $static =
-				self.serve-static( $!static-directory, $env );
-			return $static if $static;
-
-			my $return-code = $state-machine.run( $env );
-
-			my @path = 
-				map { "/$_" },
-				$env.<PATH_INFO>.split( '/', :skip-empty );
-			@path = '/' unless @path;
-			my $content = "DEFAULT";
-
-##############################################################################
-#
-# This block needs to be rewritten much tighter.
-# But it works, and it's my bedtime.
-#
-			my ( $info, $args ) =
-				self.find-in-trie(
-					%handler{$env.<REQUEST_METHOD>},
-					@path
-				);
-			my $r = $info.<routine>;
-			my @final-args;
-			for @path Z @( $args ) -> $arg
-				{
-				my $rv;
-				$arg.[0] ~~ / ^ \/ ( .* ) $ /;
-
-				if $arg.[1] ~~ Int#:D
-					{
-					$rv = +$0
-					}
-				elsif $arg.[1] ~~ Str:D
-					{
-					$rv = $arg.[0]
-					}
-				else
-					{
-					$rv = ~$0
-					}
-
-				push @final-args, $rv;
-				}
-
-			my @really-final-args;
-			for @( $info.<parameters> ) -> $parameter
-				{
-				if $parameter eq '*%QUERY*'
-					{
-					my $uri = URI.new( "$env.<p6sgi.url-scheme>://$env.<REMOTE_HOST>$env.<PATH_INFO>?$env.<QUERY_STRING>" );
-					@really-final-args.push($uri.query-form);
-					}
-				else
-					{
-					@really-final-args.push( @final-args.shift )
-					}
-				}
-
-
-			$content = $r(|@really-final-args) if $r;
-##############################################################################
-
-			return	200,
-				[ 'Content-Type' => 'text/plain' ],
-				[ $content ];
-			}
-		}
-
-	method prance( $verbose, $trace )
-		{
-		my $runner = Crust::Runner.new;
-
-		$!verbose = $verbose;
-		$!trace   = $trace;
-
-		$runner.run( self.make-app );
-		}
-
-	method display-trie( $trie, $prefix ) returns Str
-		{
-		my Str $str;
-
-		for $trie.keys.sort -> $key
-			{
-			if $trie.{$key} ~~ Sub
-				{
-				$str ~= "Path $prefix $key\n";
-				}
-			else
-				{
-				$str ~= self.display-trie( $trie.{$key}, $prefix ~ ' ' ~ $key );
-				}
-			}
-		return $str;
+		return $constraint;
 		}
 	}
 
-sub insert-into-trie( $t, @path, $r )
+my class Route-Info
 	{
-	my ( $head, @rest ) = @path;
+	has Routine $.r;
+has @.path;
+	}
 
-	if $head
+#
+# add-route can take either an Int or a Route-Info type.
+# The Int type is for testing, the Route-Info is for real-world use.
+#
+sub add-route( Hash $routes, $node, *@terms ) is export(:testing)
+	{
+	die "Shouldn't happen" unless @terms;
+	my ( $head, @tail ) = @terms;
+
+	#
+	# Yes, this should be a proper uninitialized object, but that causes
+	# all kinds of havoc with hash lookups and whatnot.
+	#
+	# Also, '#' is illegal in URLs because otherwise it's an anchor tag.
+	#
+	unless $head ~~ Str:D
 		{
-		if $t.{$head}.defined
+		$head = '#(' ~ $head.WHAT.perl ~ ')'
+		}
+
+	if @tail
+		{
+		if $routes.{$head}
 			{
-			insert-into-trie( $t.{$head}, @rest, $r )
+			if $routes.{$head} ~~ Int or
+				$routes.{$head} ~~ Route-Info
+				{
+				$routes.{$head} = { '' => $routes.{$head} };
+				}
+			else
+				{
+				}
 			}
-		elsif $head
+		else
 			{
-			$t.{$head} = { '*(Routine)*' => $r }
+			$routes.{$head} = { };
+			}
+		add-route( $routes.{$head}, $node, @tail );
+		}
+	elsif $routes.{$head}
+		{
+		if $routes.{$head} ~~ Int or $routes.{$head} ~~ Route-Info
+			{
+			$routes.{$head} = { '' => $routes.{$head} };
+			}
+		else
+			{
+			$routes.{$head}{''} = $node
 			}
 		}
 	else
 		{
-		$t.{'*(Routine)*'} = $r
+		$routes.{$head} = { '' => $node }
 		}
+	return
 	}
 
-sub routine-to-handler( Routine $r )
+sub find-element( $trie, $element )
 	{
-	my $name      = $r.name;
-	my $signature = $r.signature;
-	my @path-info;
-	my @parameters;
+	return $trie.{$element} if $trie.{$element};
+	return $trie.{'#(Int)'} if $trie.{'#(Int)'} and +$element;
+	return $trie.{'#(Str)'} if $trie.{'#(Str)'};
 
-	for $signature.params -> $param
+	return False;
+	}
+
+sub find-route( Hash $trie, *@path ) is export(:testing)
+	{
+	return False if @path.elems == 0;
+
+	if @path.elems == 1
 		{
-		my $rv;
-		if $param.name and $param.name eq '%QUERY'
+		return False unless $trie.{'/'}{''};
+		return $trie.{'/'}{''}
+		}
+
+	my $rv = $trie;
+	loop ( my $i = 0 ; $i < @path.elems; $i+=2 )
+		{
+		return False if @path[$i] ne '/';
+		if @path[$i+1]
 			{
-			$rv = '*' ~ $param.name ~ '*'
-			}
-		elsif $param.name
-			{
-			$rv = '*(' ~ $param.type.perl ~ ')*'
+			$rv = find-element( $rv.{'/'}, @path[$i+1] );
 			}
 		else
 			{
-			my $path-element;
-
-			# XXX Not sure why this is necessary, except for
-			# XXX $param.constraints being a junction
-			#
-			for $param.constraints -> $constraint
-				{
-				$path-element = $constraint;
-				last;
-				}
-			$rv = $path-element
+			$rv = $rv.{'/'}
 			}
-
-		@path-info.append( $rv ) if $rv ne '*%QUERY*';
-		@parameters.append( $rv );
+		return unless $rv;
 		}
+	$rv = $rv.{'/'} if @path.elems % 2 == 1;
+	return unless $rv;
 
-	return
-		{
-		name       => $r.name,
-		path-info  => @path-info,
-		parameters => @parameters,
-		routine    => $r
-		}
+	return $rv.{''} if $rv and $rv.{''};
 	}
 
-multi sub trait_mod:<is>( Routine $r, :$handler! ) is export
+sub list-routes( $trie ) is export(:testing)
 	{
-	my $info   = routine-to-handler( $r );
-	my $method = $info.<name>;
+	return '' unless $trie ~~ Hash;
 
-	if $info.<path-info>.[0] eq ''
+	my @routes;
+	for $trie.keys.sort -> $head
 		{
-		%handler{$method}{''}<*(Routine)*> = $info;
-		return;
+		@routes.append( map { $head ~ $_ },
+			list-routes( $trie.{$head} ) );
 		}
-
-	return unless $method ~~ HTTP-REQUEST-METHODS.any;
-
-	insert-into-trie( %handler{$method}, @( $info.<path-info> ), $info );
+	return @routes;
 	}
 
-sub prance( ) is export
+multi sub trait_mod:<is>( Routine $r, :$handler! ) is export(:testing,:ALL)
 	{
-	my $verbose = False;
-	my $trace   = False;
-	my $app     = App::Prancer::Handler.new;
+	my $name      = $r.name;
+	my $signature = $r.signature;
 
-	$verbose = True if %*ENV<VERBOSE> and %*ENV<VERBOSE> != 0;
-	$trace   = True if %*ENV<TRACE>   and %*ENV<TRACE>   != 0;
-	$app.prance( $verbose, $trace );
+	my @names = map { param-to-string( $_ ) }, $signature.params;
+	my $path = @names.join('');
+	my @path = grep { $_ ne '' }, map { ~$_ }, $path.split(/\//, :v);
+
+	add-route(
+		$PRANCER-INTERNAL-ROUTES.{$name},
+		Route-Info.new(:r($r),:path(@path)),
+		@path
+		);
+	}
+
+sub app( $env ) is export(:testing,:ALL)
+	{
+	my $response-code = 200;
+	my $MIME-type     = 'text/HTML';
+	my @content       = '';
+	my $file          = STATIC-DIRECTORY ~ $env.<PATH_INFO>;
+#say $PRANCER-INTERNAL-ROUTES.<GET>.perl;
+#say list-routes( $PRANCER-INTERNAL-ROUTES.<GET> );
+
+	if $file.IO.e and not $file.IO.d
+		{
+		$response-code = 200;
+		$MIME-type     = Crust::MIME.mime-type( $file );
+		@content       = ( $file.IO.slurp );
+		}
+	else
+		{
+		my $request-method = $env.<REQUEST_METHOD>;
+		my @path = grep { $_ ne '' },
+			   map { ~$_ },
+			   $env.<PATH_INFO>.split(/\//, :v);
+		my $info = find-route(
+			$PRANCER-INTERNAL-ROUTES.{$request-method}, @path );
+		@content = $info.r.(|@path);
+		}
+
+	return	$response-code,
+		[ 'Content-Type' => $MIME-type ],
+		[ @content ];
+	}
+
+sub prance() is export
+	{
+	my $runner = Crust::Runner.new;
+	$runner.run( &app )
 	}
