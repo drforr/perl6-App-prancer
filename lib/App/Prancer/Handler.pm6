@@ -206,9 +206,22 @@ sub app( $env ) is export(:testing,:ALL)
 	else
 		{
 		my $request-method = $env.<REQUEST_METHOD>;
-		my @path = grep { $_ ne '' },
-			   map { ~$_ },
-			   $env.<PATH_INFO>.split(/\//, :v);
+		my @path;
+		for $env.<PATH_INFO>.split(/\//, :v) -> $x
+			{
+			next if $x eq '';
+			my $foo;
+
+			if $x ~~ Match
+				{ $foo = ~$x }
+			elsif $x ~~ /^'-'?\d+/
+				{ $foo = +$x }
+			else
+				{ $foo = $x }
+
+			@path.append( $foo )
+			}
+say @path;
 		my $info = $PRANCER-INTERNAL-ROUTES.find(
 				$request-method, $env.<PATH_INFO> );
 		@content = $info.r.(|@path);
