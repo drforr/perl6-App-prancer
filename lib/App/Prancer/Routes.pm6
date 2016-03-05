@@ -66,10 +66,8 @@ my class Route-Info { };
 		# Also, '#' is illegal in URLs because otherwise it's an anchor
 		# tag.
 		#
-		unless $head ~~ Str:D
-			{
-			$head = '#(' ~ $head.WHAT.perl ~ ')'
-			}
+		$head = '#(' ~ $head.WHAT.perl ~ ')'
+			unless $head ~~ Str:D;
 
 		if @tail
 			{
@@ -78,7 +76,8 @@ my class Route-Info { };
 				if $routes.{$head} ~~ Int or
 					$routes.{$head} ~~ Route-Info
 					{
-					$routes.{$head} = { '' => $routes.{$head} };
+					$routes.{$head} =
+						{ '' => $routes.{$head} };
 					}
 				else
 					{
@@ -92,7 +91,8 @@ my class Route-Info { };
 			}
 		elsif $routes.{$head}
 			{
-			if $routes.{$head} ~~ Int or $routes.{$head} ~~ Route-Info
+			if $routes.{$head} ~~ Int or
+				$routes.{$head} ~~ Route-Info
 				{
 				$routes.{$head} = { '' => $routes.{$head} };
 				}
@@ -140,7 +140,7 @@ my class Route-Info { };
 			}
 
 		my $rv = $trie;
-		loop ( my $i = 0 ; $i < @path.elems; $i+=2 )
+		loop ( my $i = 0 ; $i < @path.elems-1; $i+=2 )
 			{
 			return False if @path[$i] ne '/';
 			if @path[$i+1]

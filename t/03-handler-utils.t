@@ -3,7 +3,7 @@ use Test;
 use App::Prancer::Handler :testing;
 use App::Prancer::Routes;
 
-plan 11;
+plan 12;
 
 diag q{add-route};
 diag q{list-routes};
@@ -188,7 +188,8 @@ subtest sub
 		    'g'      => { '/' => { '#(Str)' => { '' => 103 } } } } },
 		q{Insert '/*/*'};
 
-	}, q{Structure inserted forward};
+	},
+	q{Structure inserted forward};
 
 diag q{Insert trie elements longest-first because of potential vivification};
 
@@ -229,7 +230,8 @@ subtest sub
 		    'g'      => { '/' => { '#(Str)' => { '' => 103 } } } } },
 		q{Insert '/*/*'};
 
-	}, q{Structure inserted backward};
+	},
+	q{Structure inserted backward};
 
 subtest sub
 	{
@@ -268,7 +270,8 @@ subtest sub
 		'/g/#(Str)',
 		], q{List routes};
 
-	}, q{List routes};
+	},
+	q{List routes};
 
 subtest sub
 	{
@@ -288,7 +291,8 @@ subtest sub
 	nok $r.find( 'GET', '/a' ), q{Can't find route '/a' with default route};
 	nok $r.find( 'GET', '/1' ), q{Can't find route '/1' with default route};
 
-	}, q{Find default route};
+	},
+	q{Find default route};
 
 subtest sub
 	{
@@ -319,9 +323,34 @@ subtest sub
 	is $r.find( 'GET', '/1' ), 3, q{Can find route '/1' with '/#' wildcard};
 	is $r.find( 'GET', '/a' ), 4, q{Can find route '/a' with '/a' route};
 
-	}, q{Find /foo routes};
+	},
+	q{Find /foo routes};
 
 diag "MUST ADD /a/ TESTS AS WELL.";
+
+subtest sub
+	{
+	my $r = App::Prancer::Routes.new;
+
+	$r.add( 'GET', 1, '/', 'a', '/' );
+	$r.add( 'GET', 2, '/', Int, '/' );
+	$r.add( 'GET', 3, '/', Str, '/' );
+
+	is $r.find( 'GET', '/a/' ), 1, q{Can find /a/};
+	is $r.find( 'GET', '/1/' ), 2, q{Can find /1/};
+	is $r.find( 'GET', '/c/' ), 3, q{Can find /c/};
+
+	nok $r.find( 'GET', '/a/b' ), q{Can't find /a/b};
+	nok $r.find( 'GET', '/a/1' ), q{Can't find /a/1};
+	nok $r.find( 'GET', '/a/c' ), q{Can't find /a/c};
+	nok $r.find( 'GET', '/1/b' ), q{Can't find /1/b};
+	nok $r.find( 'GET', '/1/1' ), q{Can't find /1/1};
+	nok $r.find( 'GET', '/1/c' ), q{Can't find /1/c};
+	nok $r.find( 'GET', '/c/b' ), q{Can't find /c/b};
+	nok $r.find( 'GET', '/c/1' ), q{Can't find /c/1};
+	nok $r.find( 'GET', '/c/c' ), q{Can't find /c/c};
+	},
+	q{/(all)/ vs. permutations of 2 terms};
 
 subtest sub
 	{
@@ -340,7 +369,8 @@ subtest sub
 	nok $r.find( 'GET', '/c/b' ), q{Can't find /c/b};
 	nok $r.find( 'GET', '/c/1' ), q{Can't find /c/1};
 	nok $r.find( 'GET', '/c/c' ), q{Can't find /c/c};
-	}, q{/(all) vs. permutations of 2 terms};
+	},
+	q{/(all) vs. permutations of 2 terms};
 
 subtest sub
 	{
@@ -359,7 +389,8 @@ subtest sub
 	nok $r.find( 'GET', '/c/b' ), q{Can't find /c/b};
 	nok $r.find( 'GET', '/c/1' ), q{Can't find /c/1};
 	nok $r.find( 'GET', '/c/c' ), q{Can't find /c/c};
-	}, q{/(all)/ vs. permutations of 2 terms};
+	},
+	q{/(all)/ vs. permutations of 2 terms};
 
 subtest sub
 	{
@@ -381,7 +412,8 @@ subtest sub
 	is $r.find( 'GET', '/c/b' ), 31, q{Can find /c/b};
 	is $r.find( 'GET', '/c/1' ), 32, q{Can find /c/1};
 	is $r.find( 'GET', '/c/c' ), 33, q{Can find /c/c};
-	}, q{/#/(all) and /*/(all)};
+	},
+	q{/#/(all) and /*/(all)};
 
 subtest sub
 	{
@@ -403,7 +435,8 @@ subtest sub
 	is $r.find( 'GET', '/c/b' ), 31, q{Can find /c/b};
 	is $r.find( 'GET', '/c/1' ), 32, q{Can find /c/1};
 	is $r.find( 'GET', '/c/c' ), 33, q{Can find /c/c};
-	}, q{/a/(all) and /*/(all)};
+	},
+	q{/a/(all) and /*/(all)};
 
 subtest sub
 	{
@@ -425,7 +458,8 @@ subtest sub
 	nok $r.find( 'GET', '/c/b' ), q{Can't find /c/b};
 	nok $r.find( 'GET', '/c/1' ), q{Can't find /c/1};
 	nok $r.find( 'GET', '/c/c' ), q{Can't find /c/c};
-	}, q{/a/(all) and /#/(all)};
+	},
+	q{/a/(all) and /#/(all)};
 
 subtest sub
 	{
@@ -450,6 +484,7 @@ subtest sub
 	is $r.find( 'GET', '/c/b' ), 31, q{Can find /c/b};
 	is $r.find( 'GET', '/c/1' ), 32, q{Can find /c/1};
 	is $r.find( 'GET', '/c/c' ), 33, q{Can find /c/c};
-	}, q{All permutations of 2 terms};
+	},
+	q{All permutations of 2 terms};
 
 done-testing;

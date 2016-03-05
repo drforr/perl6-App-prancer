@@ -121,6 +121,8 @@ suite.
 
 =end pod
 
+use App::Prancer::Routes;
+
 #`(
 #use Crust::Handler::HTTP::Server::Tiny;
 
@@ -137,16 +139,7 @@ constant STATIC-DIRECTORY = 'static';
 constant HTTP-REQUEST-METHODS =
 	<DELETE GET HEAD OPTIONS PATCH POST PUT>;
 
-our $PRANCER-INTERNAL-ROUTES is export(:testing) =
-	{
-	DELETE  => { },
-	GET     => { },
-	HEAD    => { },
-	OPTIONS => { },
-	PATCH   => { },
-	POST    => { },
-	PUT     => { },
-	};
+our $PRANCER-INTERNAL-ROUTES = App::Prancer::Routes.new;
 
 sub param-to-string( $param )
 	{
@@ -167,116 +160,6 @@ my class Route-Info
 has @.path;
 	}
 
-#
-# add-route can take either an Int or a Route-Info type.
-# The Int type is for testing, the Route-Info is for real-world use.
-#
-sub add-route( Hash $routes, $node, *@terms ) is export(:testing)
-	{
-	die "Shouldn't happen" unless @terms;
-	my ( $head, @tail ) = @terms;
-
-	#
-	# Yes, this should be a proper uninitialized object, but that causes
-	# all kinds of havoc with hash lookups and whatnot.
-	#
-	# Also, '#' is illegal in URLs because otherwise it's an anchor tag.
-	#
-	unless $head ~~ Str:D
-		{
-		$head = '#(' ~ $head.WHAT.perl ~ ')'
-		}
-
-	if @tail
-		{
-		if $routes.{$head}
-			{
-			if $routes.{$head} ~~ Int or
-				$routes.{$head} ~~ Route-Info
-				{
-				$routes.{$head} = { '' => $routes.{$head} };
-				}
-			else
-				{
-				}
-			}
-		else
-			{
-			$routes.{$head} = { };
-			}
-		add-route( $routes.{$head}, $node, @tail );
-		}
-	elsif $routes.{$head}
-		{
-		if $routes.{$head} ~~ Int or $routes.{$head} ~~ Route-Info
-			{
-			$routes.{$head} = { '' => $routes.{$head} };
-			}
-		else
-			{
-			$routes.{$head}{''} = $node
-			}
-		}
-	else
-		{
-		$routes.{$head} = { '' => $node }
-		}
-	return
-	}
-
-sub find-element( $trie, $element )
-	{
-	return $trie.{$element} if $trie.{$element};
-	return $trie.{'#(Int)'} if $trie.{'#(Int)'} and +$element;
-	return $trie.{'#(Str)'} if $trie.{'#(Str)'};
-
-	return False;
-	}
-
-sub find-route( Hash $trie, Str $path ) is export(:testing)
-	{
-	my @path = grep { $_ ne '' }, map { ~$_ }, $path.split(/\//, :v);
-	return False if @path.elems == 0;
-
-	if @path.elems == 1
-		{
-		return False unless $trie.{'/'}{''};
-		return $trie.{'/'}{''}
-		}
-
-	my $rv = $trie;
-	loop ( my $i = 0 ; $i < @path.elems; $i+=2 )
-		{
-		return False if @path[$i] ne '/';
-		if @path[$i+1]
-			{
-			$rv = find-element( $rv.{'/'}, @path[$i+1] );
-			}
-		else
-			{
-			$rv = $rv.{'/'}
-			}
-		return unless $rv;
-		}
-	$rv = $rv.{'/'} if @path.elems % 2 == 1;
-	return unless $rv;
-
-	return $rv.{''} if $rv and $rv.{''};
-	}
-
-sub list-routes( $trie ) is export(:testing)
-	{
-	return '' unless $trie ~~ Hash;
-
-	my @routes;
-	for $trie.keys.sort -> $head
-		{
-		@routes.append( map { $head ~ $_ },
-			list-routes( $trie.{$head} ) );
-		}
-	return @routes;
-	}
-
 multi sub trait_mod:<is>( Routine $r, :$handler! ) is export(:testing,:ALL)
 	{
 	my $name      = $r.name;
@@ -286,8 +169,8 @@ multi sub trait_mod:<is>( Routine $r, :$handler! ) is export(:testing,:ALL)
 	my $path = @names.join('');
 	my @path = grep { $_ ne '' }, map { ~$_ }, $path.split(/\//, :v);
 
-	add-route(
-		$PRANCER-INTERNAL-ROUTES.{$name},
+	$PRANCER-INTERNAL-ROUTES.add(
+		$name, 
 		Route-Info.new(:r($r),:path(@path)),
 		@path
 		);
@@ -312,8 +195,8 @@ sub app( $env ) is export(:testing,:ALL)
 		my @path = grep { $_ ne '' },
 			   map { ~$_ },
 			   $env.<PATH_INFO>.split(/\//, :v);
-		my $info = find-route(
-			$PRANCER-INTERNAL-ROUTES.{$request-method}, $env.<PATH_INFO> );
+		my $info = $PRANCER-INTERNAL-ROUTES.find(
+				$request-method, $env.<PATH_INFO> );
 		@content = $info.r.(|@path);
 		}
 

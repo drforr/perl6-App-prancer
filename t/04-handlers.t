@@ -13,8 +13,6 @@ multi GET( '/', 'b' ) is handler { 'GET /b HTTP/1.0 OK' }
 #multi GET( '/', 'a', '/' ) is handler { 'GET /a/ HTTP/1.0 OK' }
 #multi GET( '/', 'b', '/' ) is handler { 'GET /b/ HTTP/1.0 OK' }
 
-say $PRANCER-INTERNAL-ROUTES.perl;
-
 $Crust::Test::Impl = "MockHTTP";
 
 sub content-from( $cb, $method, $URL )
