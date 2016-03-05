@@ -73,7 +73,7 @@ my class Route-Info { };
 			{
 			if $routes.{$head}
 				{
-				if $routes.{$head} ~~ Int or
+				if $routes.{$head} ~~ Int:D or
 					$routes.{$head} ~~ Route-Info
 					{
 					$routes.{$head} =
@@ -91,7 +91,7 @@ my class Route-Info { };
 			}
 		elsif $routes.{$head}
 			{
-			if $routes.{$head} ~~ Int or
+			if $routes.{$head} ~~ Int:D or
 				$routes.{$head} ~~ Route-Info
 				{
 				$routes.{$head} = { '' => $routes.{$head} };
