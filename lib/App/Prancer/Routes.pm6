@@ -116,11 +116,25 @@ my class Route-Info { };
 	method add( Str $method, $node, *@terms )
 		{
 		fail "Attempted to add empty route!" unless @terms;
-		add-route( $.routes.{$method}, $node, @terms ) or
+
+		my @final-terms;
+		for @terms -> $term
+			{
+			if $term ~~ Str:D and $term ~~ / ^ \/ (.+) /
+				{
+				@final-terms.append( '/', ~$0 );
+				}
+			else
+				{
+				@final-terms.append( $term )
+				}
+			}
+
+		add-route( $.routes.{$method}, $node, @final-terms ) or
 			fail "Path " ~ join( '',
 				grep { $_ ne '' },
 				map { $_.perl },
-				@terms
+				@final-terms
 			) ~ " already exists!";
 		}
 

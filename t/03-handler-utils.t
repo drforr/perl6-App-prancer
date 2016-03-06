@@ -3,9 +3,8 @@ use Test;
 use App::Prancer::Handler :testing;
 use App::Prancer::Routes;
 
-plan 13;
+plan 14;
 
-#`(
 subtest sub
 	{
 	plan 6;
@@ -48,7 +47,7 @@ subtest sub
 		  { '' => 1 } },
 		q{Inserted '/'};
 
-	ok $r.add( 'GET', 2, '/', 'a' ), q{Add '/a/};
+	ok $r.add( 'GET', 2, '/', 'a' ), q{Add '/a'};
 
 	is-deeply $r.routes.<GET>,
 		{ '/' =>
@@ -252,6 +251,81 @@ subtest sub
 
 	},
 	q{Inserted longest routes first};
+
+subtest sub
+	{
+	plan 14;
+
+	my $r = App::Prancer::Routes.new;
+
+	ok $r.add( 'GET', 104,  '/', Str, '/', Str ), q{Add '/*/*'};
+	ok $r.add( 'GET', 103,  '/g', '/', Str ), q{Add '/g/*' as '/g' / *};
+	ok $r.add( 'GET', 1002, '/', Int, '/f' ), q{Add '/#/f' as '/' # '/f'};
+	ok $r.add( 'GET', 102,  '/', Str, '/f' ), q{Add '/*/f' as '/' * '/f'};
+	ok $r.add( 'GET', 7,    '/d', '/e' ), q{Add '/d/e' as '/d' '/e'};
+	ok $r.add( 'GET', 1001, '/', Int, '/' ), q{Add '/#/'};
+	ok $r.add( 'GET', 101,  '/', Str, '/' ), q{Add '/*/'};
+	ok $r.add( 'GET', 5,    '/c', '/' ), q{Add '/c/' as '/c' '/'};
+	ok $r.add( 'GET', 4,    '/b' ), q{Add '/b' as '/b'};
+	ok $r.add( 'GET', 1000, '/', Int ), q{Add '/#'};
+	ok $r.add( 'GET', 100,  '/', Str ), q{Add '/*'};
+	ok $r.add( 'GET', 2,    '/a' ), q{Add '/a' as '/a'};
+	ok $r.add( 'GET', 1,    '/' ), q{Add '/'};
+
+	is-deeply $r.routes.<GET>,
+		{ '/' =>
+		  { '' => 1,
+		    'a'      => { ''  => 2 },
+		    '#(Str)' => { ''  => 100,
+		                  '/' => { ''       => 101,
+		                           'f'      => { '' => 102 },
+		                           '#(Str)' => { '' => 104 } } },
+		    '#(Int)' => { ''  => 1000,
+		                  '/' => { ''  => 1001,
+		                           'f' => { '' => 1002 } } },
+		    'b'      => { ''  => 4 },
+		    'c'      => { '/' => { ''       => 5 } },
+		    'd'      => { '/' => { 'e'      => { '' => 7 } } },
+		    'g'      => { '/' => { '#(Str)' => { '' => 103 } } } } },
+		q{Inserted '/*/*'};
+
+	},
+	q{Inserted longest routes first, moving the '/' into the literals};
+
+#`(
+subtest sub
+	{
+	plan 14;
+
+	my $r = App::Prancer::Routes.new;
+
+	ok $r.add( 'GET', 104,  Str, Str ), q{Add '/*/*' as '*,*'};
+	ok $r.add( 'GET', 103,  'g', Str ), q{Add '/g/*' as 'g,*'};
+	ok $r.add( 'GET', 1002, Int, 'f' ), q{Add '/#/f' as '#,f'};
+	ok $r.add( 'GET', 102,  Str, 'f' ), q{Add '/*/f' as '*,f'};
+	ok $r.add( 'GET', 7,    'd', 'e' ), q{Add '/d/e' as 'd,e'};
+	ok $r.add( 'GET', 4,    'b'      ), q{Add '/b' as 'b'};
+	ok $r.add( 'GET', 1000, Int      ), q{Add '/#' as '#'};
+	ok $r.add( 'GET', 100,  Str      ), q{Add '/*' as '*'};
+	ok $r.add( 'GET', 2,    'a'      ), q{Add '/a' as 'a'};
+	ok $r.add( 'GET', 1,             ), q{Add '/' as ''};
+
+	is-deeply $r.routes.<GET>,
+		{ '/' =>
+		  { '' => 1,
+		    'a'      => { ''  => 2 },
+		    '#(Str)' => { ''  => 100,
+		                  '/' => { 'f'      => { '' => 102 },
+		                           '#(Str)' => { '' => 104 } } },
+		    '#(Int)' => { ''  => 1000,
+		                  '/' => { 'f' => { '' => 1002 } } },
+		    'b'      => { ''  => 4 },
+		    'd'      => { '/' => { 'e'      => { '' => 7 } } },
+		    'g'      => { '/' => { '#(Str)' => { '' => 103 } } } } },
+		q{Inserted '/*/*'};
+
+	},
+	q{Inserted longest routes first, without '/' this time};
 )
 
 subtest sub
@@ -296,7 +370,6 @@ subtest sub
 	},
 	q{List routes};
 
-#`(
 subtest sub
 	{
 	plan 7;
@@ -520,6 +593,5 @@ subtest sub
 	is $r.find( 'GET', '/c/c' ), 33, q{Can find /c/c};
 	},
 	q{All permutations of 2 terms};
-)
 
 done-testing;
