@@ -59,13 +59,20 @@ my class Route-Info { };
 		{
 		my ( $head, @tail ) = @terms;
 
+		# Perl 6 allows objects as keys, and by all rights $head here
+		# should be allowed to remain unmodified.
 		#
-		# Yes, this should be a proper uninitialized object, but that
-		# causes # all kinds of havoc with hash lookups and whatnot.
+		# This causes problems downstream, specifically when trying to
+		# debug the internals because I'm always forgetting to add
+		# .perl or .gist to my debug commands. And I think that it's
+		# important that this core data structure should be able to
+		# be printed out without modifications.
 		#
-		# Also, '#' is illegal in URLs because otherwise it's an anchor
-		# tag.
-		#
+		# So I'm going to transform bare 'Str' and 'Int' and whatever
+		# values into '#(Str)', '#(Int)' and '#(whatever)' values
+		# for ease of reading. Besides, AFAIK '#' is illegal inside
+		# the path portion of URLs because it's an URL anchor.
+		# 
 		$head = '#(' ~ $head.WHAT.perl ~ ')'
 			unless $head ~~ Str:D;
 
@@ -79,15 +86,12 @@ my class Route-Info { };
 					$routes.{$head} =
 						{ '' => $routes.{$head} };
 					}
-				else
-					{
-					}
 				}
 			else
 				{
 				$routes.{$head} = { };
 				}
-			add-route( $routes.{$head}, $node, @tail );
+			return add-route( $routes.{$head}, $node, @tail );
 			}
 		elsif $routes.{$head}
 			{
@@ -98,6 +102,7 @@ my class Route-Info { };
 				}
 			else
 				{
+				return False if $routes.{$head}{''};
 				$routes.{$head}{''} = $node
 				}
 			}
@@ -105,14 +110,22 @@ my class Route-Info { };
 			{
 			$routes.{$head} = { '' => $node }
 			}
+		return True;
 		}
 
 	method add( Str $method, $node, *@terms )
 		{
-		die "Attempted to add empty route!" unless @terms;
-		add-route( $.routes.{$method}, $node, @terms );
+		fail "Attempted to add empty route!" unless @terms;
+		add-route( $.routes.{$method}, $node, @terms ) or
+			fail "Path " ~ join( '',
+				grep { $_ ne '' },
+				map { $_.perl },
+				@terms
+			) ~ " already exists!";
 		}
 
+	# Int is a subset of Str, so match on that type first.
+	#
 	sub find-element( $trie, $element )
 		{
 		return $trie.{$element} if $trie.{$element};
@@ -159,13 +172,20 @@ my class Route-Info { };
 		return $rv.{''} if $rv and $rv.{''};
 		}
 
-	sub list-routes( $trie ) is export(:testing)
+	sub list-routes( $trie )
 		{
 		my @routes;
-		for $trie.keys.sort -> $head
+		@routes.append( '/' )
+			if $trie.{'/'}.{''};
+
+		for $trie.{'/'}.keys.sort -> $e
 			{
-			@routes.append( map { $head ~ $_ },
-				list-routes( $trie.{$head} ) );
+			my $temp = $trie.{'/'}{$e};
+			@routes.append( "/$e" )
+				if $temp.{''};
+			@routes.append(
+				map { "/$e$_" }, list-routes( $temp ) )
+				if $temp.{'/'};
 			}
 		return @routes;
 		}
