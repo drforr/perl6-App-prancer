@@ -1,13 +1,12 @@
 class App::Prancer::StateMachine
 	{
 	constant QUERY-LENGTH-LIMIT = 1024;
-#	has Bool $.available = False;
+	has Bool $.available = False;
 	has Bool $.trace = False;
 
 	sub B13-available( $machine, $r )
 		{
-		#return $machine.available;
-		return True
+		return $machine.available;
 		}
 	sub B12-known-method( $machine, $r )
 		{
@@ -16,7 +15,7 @@ class App::Prancer::StateMachine
 		}
 	sub B11-uri-too-long( $machine, $r )
 		{
-return False;
+		return $r.<URI>.chars > QUERY-LENGTH-LIMIT
 		}
 	sub B10-method-allowed-on-resource( $machine, $r )
 		{

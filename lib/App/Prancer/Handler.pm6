@@ -121,14 +121,11 @@ suite.
 
 =end pod
 
+use Crust::MIME;
 use App::Prancer::Routes;
 
 #`(
-#use Crust::Handler::HTTP::Server::Tiny;
-
 use URI;
-use Crust::Runner;
-use Crust::MIME;
 
 #	my $uri = URI.new( "$env.<p6sgi.url-scheme>://$env.<REMOTE_HOST>$env.<PATH_INFO>?$env.<QUERY_STRING>" );
 )
@@ -139,7 +136,7 @@ constant HTTP-REQUEST-METHODS =
 
 our $PRANCER-INTERNAL-ROUTES = App::Prancer::Routes.new;
 
-sub routine-to-handler( Routine $r )
+sub routine-to-route( Routine $r )
 	{
 	my $signature = $r.signature;
 	my @parameters;
@@ -179,7 +176,7 @@ multi sub trait_mod:<is>( Routine $r, :$handler! ) is export(:testing,:ALL)
 	my $name      = $r.name;
 	my $signature = $r.signature;
 
-	my @names = routine-to-handler( $r );
+	my @names = routine-to-route( $r );
 	my $path  = @names.join('');
 	my @path  = grep { $_ ne '' }, map { ~$_ }, $path.split(/\//, :v);
 
@@ -194,6 +191,7 @@ sub app( $env ) is export(:testing,:ALL)
 	{
 	my $response-code = 200;
 	my $MIME-type     = 'text/HTML';
+	my @header;
 	my @content       = '';
 	my $file          = STATIC-DIRECTORY ~ $env.<PATH_INFO>;
 
@@ -210,25 +208,22 @@ sub app( $env ) is export(:testing,:ALL)
 		for $env.<PATH_INFO>.split(/\//, :v) -> $x
 			{
 			next if $x eq '';
-			my $foo;
+			my $foo = $x;
 
 			if $x ~~ Match
 				{ $foo = ~$x }
 			elsif $x ~~ /^'-'?\d+/
 				{ $foo = +$x }
-			else
-				{ $foo = $x }
 
 			@path.append( $foo )
 			}
-say @path;
 		my $info = $PRANCER-INTERNAL-ROUTES.find(
 				$request-method, $env.<PATH_INFO> );
-		@content = $info.r.(|@path);
+		@content = $info.r.( |@path );
 		}
 
 	return	$response-code,
-		[ 'Content-Type' => $MIME-type ],
+		[ 'Content-Type' => $MIME-type, @header ],
 		[ @content ];
 	}
 

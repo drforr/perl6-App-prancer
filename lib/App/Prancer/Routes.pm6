@@ -122,11 +122,11 @@ my class Route-Info { };
 		return False;
 		}
 
-	method find( Str $method, Str $URL )
+	method find( Str $method, Str:D $URL )
 		{
 		my $trie = $.routes.{$method};
 
-		return False unless $URL and $URL ~~ /^\//;
+		return False unless $URL ~~ /^\//;
 
 		my @path =
 			grep { $_ ne '' },
@@ -161,8 +161,6 @@ my class Route-Info { };
 
 	sub list-routes( $trie ) is export(:testing)
 		{
-		return '' unless $trie ~~ Hash;
-
 		my @routes;
 		for $trie.keys.sort -> $head
 			{
