@@ -3,7 +3,7 @@ use Test;
 use App::Prancer::Handler :testing;
 use App::Prancer::Routes;
 
-plan 17;
+plan 18;
 
 subtest sub
 	{
@@ -373,42 +373,6 @@ subtest sub
 	},
 	q{Inserted longest routes first, compressing literals maximally};
 
-#`(
-subtest sub
-	{
-	plan 14;
-
-	my $r = App::Prancer::Routes.new;
-
-	ok $r.add( 'GET', 104,  Str, Str ), q{Add '/*/*' as '*,*'};
-	ok $r.add( 'GET', 103,  'g', Str ), q{Add '/g/*' as 'g,*'};
-	ok $r.add( 'GET', 1002, Int, 'f' ), q{Add '/#/f' as '#,f'};
-	ok $r.add( 'GET', 102,  Str, 'f' ), q{Add '/*/f' as '*,f'};
-	ok $r.add( 'GET', 7,    'd', 'e' ), q{Add '/d/e' as 'd,e'};
-	ok $r.add( 'GET', 4,    'b'      ), q{Add '/b' as 'b'};
-	ok $r.add( 'GET', 1000, Int      ), q{Add '/#' as '#'};
-	ok $r.add( 'GET', 100,  Str      ), q{Add '/*' as '*'};
-	ok $r.add( 'GET', 2,    'a'      ), q{Add '/a' as 'a'};
-	ok $r.add( 'GET', 1,             ), q{Add '/' as ''};
-
-	is-deeply $r.routes.<GET>,
-		{ '/' =>
-		  { '' => 1,
-		    'a'      => { ''  => 2 },
-		    '#(Str)' => { ''  => 100,
-		                  '/' => { 'f'      => { '' => 102 },
-		                           '#(Str)' => { '' => 104 } } },
-		    '#(Int)' => { ''  => 1000,
-		                  '/' => { 'f' => { '' => 1002 } } },
-		    'b'      => { ''  => 4 },
-		    'd'      => { '/' => { 'e'      => { '' => 7 } } },
-		    'g'      => { '/' => { '#(Str)' => { '' => 103 } } } } },
-		q{Inserted '/*/*'};
-
-	},
-	q{Inserted longest routes first, without '/' this time};
-)
-
 subtest sub
 	{
 	plan 15;
@@ -490,6 +454,40 @@ subtest sub
 
 	},
 	q{List routes without leading '/'};
+
+subtest sub
+	{
+	plan 11;
+
+	my $r = App::Prancer::Routes.new;
+
+	ok $r.add( 'GET', 10001, 'h', 'i', 'j' ), q{Add '/h/i/j'};
+	ok $r.add( 'GET', 104,   Str, Str ), q{Add '/*/*'};
+	ok $r.add( 'GET', 103,   'g', Str ), q{Add '/g/*'};
+	ok $r.add( 'GET', 1002,  Int, 'f' ), q{Add '/#/f'};
+	ok $r.add( 'GET', 102,   Str, 'f' ), q{Add '/*/f'};
+	ok $r.add( 'GET', 7,     'd', 'e' ), q{Add '/d/e'};
+	ok $r.add( 'GET', 4,     'b' ), q{Add '/b'};
+	ok $r.add( 'GET', 1000,  Int ), q{Add '/#'};
+	ok $r.add( 'GET', 100,   Str ), q{Add '/*'};
+	ok $r.add( 'GET', 2,     'a' ), q{Add '/a'};
+
+	is-deeply [ $r.list( 'GET' ) ],
+		[
+		'/#(Int)',
+		'/#(Int)/f',
+		'/#(Str)',
+		'/#(Str)/#(Str)',
+		'/#(Str)/f',
+		'/a',
+		'/b',
+		'/d/e',
+		'/g/#(Str)',
+		'/h/i/j'
+		], q{List routes};
+
+	},
+	q{List routes without any '/'};
 
 subtest sub
 	{

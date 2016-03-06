@@ -114,24 +114,21 @@ my class Route-Info { };
 		{
 		fail "Attempted to add empty route!" unless @terms;
 
-		my @x = map
-			{ $_ ~~ Str:D ?? $_ !! '#(' ~ $_.WHAT.perl ~ ')' },
+		my @x = map { $_ ~~ Str:D ?? $_ !! '#(' ~ $_.WHAT.perl ~ ')' },
 			@terms;
 
 		my @final-terms;
 		for @x -> $term
 			{
-			if $term ~~ / \/ /
-				{
-				@final-terms.append(
-					grep { $_ ne '' },
-					map { ~$_ },
-					$term.split( /\/+/, :v ) );
-				}
-			else
-				{
-				@final-terms.append( $term )
-				}
+			my @terms =
+				grep { $_ ne '' },
+				map { ~$_ },
+				$term.split( /\/+/, :v );
+			@final-terms.push( '/' ) if
+				@final-terms and
+				@final-terms[*-1] ne '/' and
+				@terms[0] ne '/';
+			@final-terms.append( @terms );
 			}
 		@final-terms.unshift( '/' ) if @final-terms[0] ne '/';
 
