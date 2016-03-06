@@ -120,9 +120,12 @@ my class Route-Info { };
 		my @final-terms;
 		for @terms -> $term
 			{
-			if $term ~~ Str:D and $term ~~ / ^ \/ (.+) /
+			if $term ~~ Str:D and $term ~~ / \/ /
 				{
-				@final-terms.append( '/', ~$0 );
+				@final-terms.append(
+					grep { $_ ne '' },
+					map { ~$_ },
+					$term.split( /\/+/, :v ) );
 				}
 			else
 				{
