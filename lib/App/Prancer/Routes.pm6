@@ -73,9 +73,6 @@ my class Route-Info { };
 		# for ease of reading. Besides, AFAIK '#' is illegal inside
 		# the path portion of URLs because it's an URL anchor.
 		# 
-		$head = '#(' ~ $head.WHAT.perl ~ ')'
-			unless $head ~~ Str:D;
-
 		if @tail
 			{
 			if $routes.{$head}
@@ -117,10 +114,14 @@ my class Route-Info { };
 		{
 		fail "Attempted to add empty route!" unless @terms;
 
+		my @x = map
+			{ $_ ~~ Str:D ?? $_ !! '#(' ~ $_.WHAT.perl ~ ')' },
+			@terms;
+
 		my @final-terms;
-		for @terms -> $term
+		for @x -> $term
 			{
-			if $term ~~ Str:D and $term ~~ / \/ /
+			if $term ~~ / \/ /
 				{
 				@final-terms.append(
 					grep { $_ ne '' },
@@ -132,6 +133,7 @@ my class Route-Info { };
 				@final-terms.append( $term )
 				}
 			}
+		@final-terms.unshift( '/' ) if @final-terms[0] ne '/';
 
 		add-route( $.routes.{$method}, $node, @final-terms ) or
 			fail "Path " ~ join( '',

@@ -3,7 +3,7 @@ use Test;
 use App::Prancer::Handler :testing;
 use App::Prancer::Routes;
 
-plan 16;
+plan 17;
 
 subtest sub
 	{
@@ -450,6 +450,46 @@ subtest sub
 
 	},
 	q{List routes};
+
+subtest sub
+	{
+	plan 14;
+
+	my $r = App::Prancer::Routes.new;
+
+	ok $r.add( 'GET', 10001, 'h', '/', 'i', '/', 'j' ), q{Add '/h/i/j'};
+	ok $r.add( 'GET', 104,   Str, '/', Str ), q{Add '/*/*'};
+	ok $r.add( 'GET', 103,   'g', '/', Str ), q{Add '/g/*'};
+	ok $r.add( 'GET', 1002,  Int, '/', 'f' ), q{Add '/#/f'};
+	ok $r.add( 'GET', 102,   Str, '/', 'f' ), q{Add '/*/f'};
+	ok $r.add( 'GET', 7,     'd', '/', 'e' ), q{Add '/d/e'};
+	ok $r.add( 'GET', 1001,  Int, '/' ), q{Add '/#/'};
+	ok $r.add( 'GET', 101,   Str, '/' ), q{Add '/*/'};
+	ok $r.add( 'GET', 5,     'c', '/' ), q{Add '/c/'};
+	ok $r.add( 'GET', 4,     'b' ), q{Add '/b'};
+	ok $r.add( 'GET', 1000,  Int ), q{Add '/#'};
+	ok $r.add( 'GET', 100,   Str ), q{Add '/*'};
+	ok $r.add( 'GET', 2,     'a' ), q{Add '/a'};
+
+	is-deeply [ $r.list( 'GET' ) ],
+		[
+		'/#(Int)',
+		'/#(Int)/',
+		'/#(Int)/f',
+		'/#(Str)',
+		'/#(Str)/',
+		'/#(Str)/#(Str)',
+		'/#(Str)/f',
+		'/a',
+		'/b',
+		'/c/',
+		'/d/e',
+		'/g/#(Str)',
+		'/h/i/j'
+		], q{List routes};
+
+	},
+	q{List routes without leading '/'};
 
 subtest sub
 	{
