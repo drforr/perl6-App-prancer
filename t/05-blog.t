@@ -16,43 +16,43 @@ sub content-from( $cb, $method, $URL )
 
 # Root of the site.
 #
-multi GET( '' ) is handler { '/' }
+multi GET( '' ) is route { '/' }
 
 # Check single-element URL
 #
-multi GET( '/foo'          ) is handler { '/foo'                        }
-multi GET( '/post', %QUERY ) is handler { "/post?format=%QUERY<format>" }
-multi GET( %QUERY, '/user' ) is handler { "/user?format=%QUERY<format>" }
-multi GET( 'bare'          ) is handler { '/bare'                       }
-multi GET( Int $x          ) is handler { "/#{$x}"                      }
-multi GET( Str $x          ) is handler { "/\${$x}"                     }
+multi GET( '/foo'          ) is route { '/foo'                        }
+multi GET( '/post', %QUERY ) is route { "/post?format=%QUERY<format>" }
+multi GET( %QUERY, '/user' ) is route { "/user?format=%QUERY<format>" }
+multi GET( 'bare'          ) is route { '/bare'                       }
+multi GET( Int $x          ) is route { "/#{$x}"                      }
+multi GET( Str $x          ) is route { "/\${$x}"                     }
 
 # Check that a single argument can be broken in twain.
 #
-multi GET( '/join/join'   ) is handler { "/join/join" }
+multi GET( '/join/join'   ) is route { "/join/join" }
 
 # Check the permutations of two arguments
 #
-multi GET( '/foo', '/foo' ) is handler { "/foo/foo"   }
-multi GET( '/foo', 'bare' ) is handler { "/foo/bare"  }
-multi GET( '/foo', Str $x ) is handler { "/foo/{$x}"  }
-multi GET( 'bare', '/foo' ) is handler { "/bare/foo"  }
-multi GET( 'bare', 'bare' ) is handler { "/bare/bare" }
-multi GET( 'bare', Str $x ) is handler { "/bare/{$x}" }
-multi GET( Str $x, '/foo' ) is handler { "/{$x}/foo"  }
-multi GET( Str $x, 'bare' ) is handler { "/{$x}/bare" }
-multi GET( Str $x, Str $y ) is handler { "/{$x}/{$y}" }
+multi GET( '/foo', '/foo' ) is route { "/foo/foo"   }
+multi GET( '/foo', 'bare' ) is route { "/foo/bare"  }
+multi GET( '/foo', Str $x ) is route { "/foo/{$x}"  }
+multi GET( 'bare', '/foo' ) is route { "/bare/foo"  }
+multi GET( 'bare', 'bare' ) is route { "/bare/bare" }
+multi GET( 'bare', Str $x ) is route { "/bare/{$x}" }
+multi GET( Str $x, '/foo' ) is route { "/{$x}/foo"  }
+multi GET( Str $x, 'bare' ) is route { "/{$x}/bare" }
+multi GET( Str $x, Str $y ) is route { "/{$x}/{$y}" }
 
 # And permutations of three, but simpler this time, otherwise m**n explosion
 #
-multi GET( '/foo', '/foo', '/foo' ) is handler { "/foo/foo/foo" }
-multi GET( '/foo', '/foo', Str $x ) is handler { "/foo/foo/{$x}" }
-multi GET( '/foo', Str $x, '/foo' ) is handler { "/foo/{$x}/foo" }
-multi GET( '/foo', Str $x, Str $y ) is handler { "/foo/{$x}/{$y}" }
-multi GET( Str $x, '/foo', '/foo' ) is handler { "/{$x}/foo/foo" }
-multi GET( Str $x, '/foo', Str $y ) is handler { "/{$x}/foo/{$y}" }
-multi GET( Str $x, Str $y, '/foo' ) is handler { "/{$x}/{$y}/foo" }
-multi GET( Str $x, Str $y, Str $z ) is handler { "/{$x}/{$y}/{$z}" }
+multi GET( '/foo', '/foo', '/foo' ) is route { "/foo/foo/foo" }
+multi GET( '/foo', '/foo', Str $x ) is route { "/foo/foo/{$x}" }
+multi GET( '/foo', Str $x, '/foo' ) is route { "/foo/{$x}/foo" }
+multi GET( '/foo', Str $x, Str $y ) is route { "/foo/{$x}/{$y}" }
+multi GET( Str $x, '/foo', '/foo' ) is route { "/{$x}/foo/foo" }
+multi GET( Str $x, '/foo', Str $y ) is route { "/{$x}/foo/{$y}" }
+multi GET( Str $x, Str $y, '/foo' ) is route { "/{$x}/{$y}/foo" }
+multi GET( Str $x, Str $y, Str $z ) is route { "/{$x}/{$y}/{$z}" }
 
 test-psgi
 	client => -> $cb
@@ -78,7 +78,7 @@ test-psgi
 
 			is content-from( $cb, 'GET', '/join/join'   ),
 			   '/join/join';
-			}, q{Single-element handlers};
+			}, q{Single-element route};
 
 		subtest sub
 			{
@@ -102,7 +102,7 @@ test-psgi
 			   '/bar/bare';
 			is content-from( $cb, 'GET', '/bar/bar'   ),
 			   '/bar/bar';
-			}, q{Two-element handlers};
+			}, q{Two-element route};
 
 		subtest sub
 			{
@@ -124,7 +124,7 @@ test-psgi
 			   '/bar/bar/foo';
 			is content-from( $cb, 'GET', '/bar/bar/bar' ),
 			   '/bar/bar/bar';
-			}, q{Three-element handlers};
+			}, q{Three-element route};
 		},
 	app => $p.make-app;
 

@@ -4,18 +4,18 @@ use Test;
 use Crust::Test;
 use App::Prancer::Handler :testing;
 
-# Don't worry about handler ordering, that was taken care of in
-# 03-handler-utils.t
+# Don't worry about route ordering, that was taken care of in
+# 03-route-utils.t
 
-multi GET( '/' ) is handler { 'GET / HTTP/1.0 OK' }
-multi GET( '/', 'a' ) is handler { 'GET /a HTTP/1.0 OK' }
-multi GET( '/', 'b' ) is handler { 'GET /b HTTP/1.0 OK' }
-multi GET( '/', Int $x ) is handler { "GET /#$x HTTP/1.0 OK" }
-multi GET( '/', Str $x ) is handler { "GET /*$x HTTP/1.0 OK" }
-multi GET( '/', 'a', '/' ) is handler { 'GET /a/ HTTP/1.0 OK' }
-multi GET( '/', 'b', '/' ) is handler { 'GET /b/ HTTP/1.0 OK' }
-multi GET( '/', Int $x, '/' ) is handler { "GET /#$x/ HTTP/1.0 OK" }
-multi GET( '/', Str $x, '/' ) is handler { "GET /*$x/ HTTP/1.0 OK" }
+multi GET( '/' ) is route { 'GET / HTTP/1.0 OK' }
+multi GET( '/', 'a' ) is route { 'GET /a HTTP/1.0 OK' }
+multi GET( '/', 'b' ) is route { 'GET /b HTTP/1.0 OK' }
+multi GET( '/', Int $x ) is route { "GET /#$x HTTP/1.0 OK" }
+multi GET( '/', Str $x ) is route { "GET /*$x HTTP/1.0 OK" }
+multi GET( '/', 'a', '/' ) is route { 'GET /a/ HTTP/1.0 OK' }
+multi GET( '/', 'b', '/' ) is route { 'GET /b/ HTTP/1.0 OK' }
+multi GET( '/', Int $x, '/' ) is route { "GET /#$x/ HTTP/1.0 OK" }
+multi GET( '/', Str $x, '/' ) is route { "GET /*$x/ HTTP/1.0 OK" }
 
 $Crust::Test::Impl = "MockHTTP";
 

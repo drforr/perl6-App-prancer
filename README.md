@@ -13,7 +13,7 @@ You have to know how to do 4 things in order to write a Prancer web app:
 ```
 use Prancer::Handler;
 
-multi GET( '/post' ) is handler {
+multi GET( '/post' ) is route {
   return '<html><head>Post content here</head><body></html>';
 }
 
@@ -34,7 +34,7 @@ For instance, you could listen for a 'GET /post/2016/02/my-great-post HTTP/1.1'
 request by creating a function like this:
 
 ```
-multi GET( '/post/2016/02/my-great-post' ) is handler { }
+multi GET( '/post/2016/02/my-great-post' ) is route { }
 ```
 
 But that only listens for that particular post in that particular year. If you
@@ -42,7 +42,7 @@ want to listen for that post during any year, just replace 2016 and 02 with
 regular Perl arguments like so:
 
 ```
-multi GET( '/post', Int:D $year, Int:D $month, '/my-great-post' ) is handler { }
+multi GET( '/post', Int:D $year, Int:D $month, '/my-great-post' ) is route { }
 ```
 
 You can listen for any post name by replacing '/my-great-post' with a string
