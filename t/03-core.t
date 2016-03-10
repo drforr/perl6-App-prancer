@@ -3,7 +3,7 @@ use Test;
 use App::Prancer::Routes :testing;
 use App::Prancer::Core;
 
-plan 21;
+plan 19;
 
 # Can't declare an optional parameter here.
 #
@@ -23,23 +23,6 @@ subtest sub
 		q{Add '/#(Str)'};
 	},
 	q{Add canonical forms of basic route types};
-
-subtest sub
-	{
-	plan 2;
-
-	my $r = App::Prancer::Core.new;
-
-	my class BlogID   is Int {};
-	my class UserName is Str {};
-	my class Compound { method new( Int $x, Str $y ) { } };
-
-	ok $r.add( 'GET', 3, '/', BlogID ),
-		q{Add '/#(BlogID)' -> '/#(Int)'};
-	ok $r.add( 'GET', 4, '/', UserName ),
-		q{Add '/#(UserName) -> '/#(Str)''};
-	},
-	q{Add canonical forms of non-basic route types};
 
 subtest sub
 	{
@@ -576,43 +559,6 @@ subtest sub
 
 	},
 	q{Find /foo routes};
-
-subtest sub
-	{
-	plan 14;
-
-	my class BlogID is Int { };
-	my class UserName is Str { };
-
-	my $r = App::Prancer::Core.new;
-
-	ok $r.add( 'GET', 1, '/' ), q{Add '/'};
-
-	ok $r.add( 'GET', 2, '/', UserName ), q{Add '/*(UserName)'};
-
-	is $r.find( 'GET', '/' ), 1, q{Can find default route};
-	is $r.find( 'GET', '/a' ), 2, q{Can find route '/a' with wildcard};
-	is $r.find( 'GET', '/1' ), 2, q{Can find route '/1' with wildcard};
-
-	ok $r.add( 'GET', 3, '/', BlogID ), q{Add '/#(BlogID)'};
-
-	is $r.find( 'GET', '/' ), 1, q{Can find default route};
-	is $r.find( 'GET', '/a' ), 2,
-		q{Can find route '/a' with '/*(UserName)' wildcard};
-	is $r.find( 'GET', '/1' ), 3,
-		q{Can find route '/1' with '/#(BlogID)' wildcard};
-
-	ok $r.add( 'GET', 4, '/', 'a' ), q{Add '/a'};
-
-	is $r.find( 'GET', '/' ), 1, q{Can find default route};
-	is $r.find( 'GET', '/b' ), 2,
-		q{Can find route '/b' with '/*(UserName)' wildcard};
-	is $r.find( 'GET', '/1' ), 3,
-		q{Can find route '/1' with '/#(BlogID)' wildcard};
-	is $r.find( 'GET', '/a' ), 4, q{Can find route '/a' with '/a' route};
-
-	},
-	q{Find typed /foo routes};
 
 subtest sub
 	{

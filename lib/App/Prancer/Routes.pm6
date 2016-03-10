@@ -110,8 +110,6 @@ have the original L<Crust> C<$env> variable passed to you in C<%*ENV>:
 
 =item Dynamic routes with only literal terms
 
-=item Dynamic routes with variables that aren't C<Int> or C<Str>
-
 =item Dynamic routes with C<Int> variables
 
 =item Dynamic routes with C<Str> variables
@@ -130,11 +128,7 @@ suite.
 use Crust::MIME;
 use App::Prancer::Core;
 
-#`(
-use URI;
-
-#	my $uri = URI.new( "$env.<p6sgi.url-scheme>://$env.<REMOTE_HOST>$env.<PATH_INFO>?$env.<QUERY_STRING>" );
-)
+#my $uri = URI.new( "$env.<p6sgi.url-scheme>://$env.<REMOTE_HOST>$env.<PATH_INFO>?$env.<QUERY_STRING>" );
 
 constant STATIC-DIRECTORY = 'static';
 constant HTTP-REQUEST-METHODS =
