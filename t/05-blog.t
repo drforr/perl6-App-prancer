@@ -2,11 +2,12 @@ use v6;
 
 use Test;
 use Crust::Test;
-use App::Prancer::Handler;
-my $p = App::Prancer::Handler.new;
+use App::Prancer::Routes;
+#my $p = App::Prancer::Handler.new;
 
 $Crust::Test::Impl = "MockHTTP";
 
+#`(
 sub content-from( $cb, $method, $URL )
 	{
 	my $req = HTTP::Request.new( GET => $URL );
@@ -20,12 +21,11 @@ multi GET( '' ) is route { '/' }
 
 # Check single-element URL
 #
-multi GET( '/foo'          ) is route { '/foo'                        }
-multi GET( '/post', %QUERY ) is route { "/post?format=%QUERY<format>" }
-multi GET( %QUERY, '/user' ) is route { "/user?format=%QUERY<format>" }
-multi GET( 'bare'          ) is route { '/bare'                       }
-multi GET( Int $x          ) is route { "/#{$x}"                      }
-multi GET( Str $x          ) is route { "/\${$x}"                     }
+multi GET( '/foo'                ) is route { '/foo'                        }
+multi GET( '/post', Str :$format ) is route { "/post?format=%QUERY<format>" }
+multi GET( 'bare'                ) is route { '/bare'                       }
+multi GET( Int $x                ) is route { "/#{$x}"                      }
+multi GET( Str $x                ) is route { "/\${$x}"                     }
 
 # Check that a single argument can be broken in twain.
 #
@@ -127,5 +127,6 @@ test-psgi
 			}, q{Three-element route};
 		},
 	app => $p.make-app;
+)
 
 done-testing;
