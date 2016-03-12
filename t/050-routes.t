@@ -4,9 +4,6 @@ use Test;
 use Crust::Test;
 use App::Prancer::Routes :testing;
 
-# Don't worry about route ordering, that was taken care of in
-# 03-route-utils.t
-
 multi GET( '/' ) is route { 'GET / HTTP/1.0 OK' }
 multi GET( '/', 'a' ) is route { 'GET /a HTTP/1.0 OK' }
 multi GET( '/', 'b' ) is route { 'GET /b HTTP/1.0 OK' }

@@ -178,6 +178,10 @@ my class Route-Info { };
 			$rv = find-element( $rv.{'/'}, $element );
 			last unless $rv;
 			}
+
+		# If we couldn't find a match, or we ran out of elements before
+		# running out of trie, then check the array.
+		#
 		if !$rv or ( $rv.{'/'} and $rv.keys == 1 )
 			{
 			$rv = $deepest-array if $deepest-array;
