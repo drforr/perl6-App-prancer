@@ -112,7 +112,9 @@ my class Route-Info { };
 
 	method add( Str $method, $node, *@terms )
 		{
-		fail "Attempted to add empty route!" unless @terms;
+		fail "Cannot add empty route!" unless @terms;
+		fail "Cannot add route with two Arrays!"
+			if (grep { $_ ~~ Array }, @terms ).elems > 1;
 
 		my @x;
 		for @terms -> $x
@@ -121,6 +123,7 @@ my class Route-Info { };
 			if $x ~~ Str:D  { $v = $x }
 			elsif $x ~~ Int { $v = '#(Int)' }
 			elsif $x ~~ Str { $v = '#(Str)' }
+			elsif $x ~~ Array { $v = '#(Array)' }
 			@x.append( $v )
 			}
 
@@ -181,6 +184,11 @@ my class Route-Info { };
 			return False if @path[$i] ne '/';
 			if @path[$i+1]
 				{
+				if $rv.{'/'}.{'#(Array)'}
+					{
+					$rv = $rv.{'/'}.{'#(Array)'};
+					last;
+					}
 				$rv = find-element( $rv.{'/'}, @path[$i+1] );
 				}
 			else
