@@ -125,7 +125,6 @@ subtest sub
 		},
 		q{Route '/#(Str)'};
 
-#`(
 	subtest sub
 		{
 		plan 7;
@@ -145,7 +144,6 @@ subtest sub
 		is $r.find( 'GET', '/a/1' ), 1, q{Find '/a/1'};
 		},
 		q{Route '/#(Array)'};
-)
 	},
 	q{Single route element};
 
@@ -231,7 +229,6 @@ subtest sub
 		},
 		q{Route '/#(Str)/'};
 
-#`(
 	subtest sub
 		{
 		plan 7;
@@ -251,7 +248,6 @@ subtest sub
 		nok $r.find( 'GET', '/a/1' ), q{Fail to find '/a/1'};
 		},
 		q{Route '/#(Array)/'};
-)
 	},
 	q{Single route element with final slash};
 
@@ -367,7 +363,6 @@ subtest sub
 			},
 			q{Route '/a/#(Str)'};
 
-#`(
 		subtest sub
 			{
 			plan 7;
@@ -394,7 +389,6 @@ subtest sub
 				 q{Find '/a/a/1'};
 			},
 			q{Route '/a/#(Array)'};
-)
 		},
 		q{Two route elements, start with '/a'};
 
@@ -508,7 +502,6 @@ subtest sub
 			},
 			q{Route '/1/#(Str)'};
 
-#`(
 		subtest sub
 			{
 			plan 7;
@@ -535,7 +528,6 @@ subtest sub
 				q{Find '/1/a/1'};
 			},
 			q{Route '/1/#(Array)'};
-)
 		},
 		q{Two route elements, start with '/1'};
 
@@ -649,7 +641,6 @@ subtest sub
 			},
 			q{Route '/#(Int)/#(Str)'};
 
-#`(
 		subtest sub
 			{
 			plan 7;
@@ -676,7 +667,6 @@ subtest sub
 				q{Find '/#(Int)/a/1'};
 			},
 			q{Route '/#(Int)/#(Array)'};
-)
 		},
 		q{Two route elements, start with '/#(Int)'};
 
@@ -790,7 +780,6 @@ subtest sub
 			},
 			q{Route '/#(Str)/#(Str)'};
 
-#`(
 		subtest sub
 			{
 			plan 7;
@@ -817,7 +806,6 @@ subtest sub
 				q{Find '/#(Str)/a/1'};
 			},
 			q{Route '/#(Str)/#(Array)'};
-)
 		},
 		q{Two route elements, start with '/#(Str)'};
 

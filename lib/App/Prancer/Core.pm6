@@ -168,10 +168,17 @@ my class Route-Info { };
 
 		my @path = grep { $_ ne '' }, $URL.split( /\// );
 		my $rv = $trie;
+		my $deepest-array;
 		for @path -> $element
 			{
+			$deepest-array = $rv.{'/'}.{'#(Array)'} if
+				$rv.{'/'}.{'#(Array)'};
 			$rv = find-element( $rv.{'/'}, $element );
 			last unless $rv;
+			}
+		unless $rv
+			{
+			$rv = $deepest-array if $deepest-array;
 			}
 
 		if $URL ~~ m{\/$}
