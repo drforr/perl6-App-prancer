@@ -55,7 +55,7 @@ the rest of the path. Not a slurpy array though, that does something different.
 
     GET /path/to/my/deeply-buried-avatar.png HTTP/1.1
     multi GET( 'path', $to, @path-to-avatar ) is route
-      { return "/path/$to/@path-to-avatar" }
+      { return "/path/$to/{@path-to-avatar.join('/')}" }
 
 =head1 Ordering
 

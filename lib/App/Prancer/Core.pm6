@@ -164,43 +164,24 @@ my class Route-Info { };
 	method find( Str $method, Str:D $URL )
 		{
 		my $trie = $.routes.{$method};
+		return False unless $trie and $URL and $URL ~~ /^\//;
 
-		return False unless $URL ~~ /^\//;
-
-		my @path =
-			grep { $_ ne '' },
-			map { ~$_ },
-			$URL.split(/\//, :v);
-
-		if @path.elems == 1
-			{
-			return False unless $trie.{'/'}{''};
-			return $trie.{'/'}{''}
-			}
-
+		my @path = grep { $_ ne '' }, $URL.split( /\// );
 		my $rv = $trie;
-		loop ( my $i = 0 ; $i < @path.elems-1; $i+=2 )
+		for @path -> $element
 			{
-			return False if @path[$i] ne '/';
-			if @path[$i+1]
-				{
-				if $rv.{'/'}.{'#(Array)'}
-					{
-					$rv = $rv.{'/'}.{'#(Array)'};
-					last;
-					}
-				$rv = find-element( $rv.{'/'}, @path[$i+1] );
-				}
-			else
-				{
-				$rv = $rv.{'/'}
-				}
-			return unless $rv;
+			$rv = find-element( $rv.{'/'}, $element );
+			last unless $rv;
 			}
-		$rv = $rv.{'/'} if @path.elems % 2 == 1;
-		return unless $rv;
 
-		return $rv.{''} if $rv and $rv.{''};
+		if $URL ~~ m{\/$}
+			{
+			return $rv.{'/'}.{''} if $rv.{'/'}.{''};
+			}
+		else
+			{
+			return $rv.{''} if $rv.{''}
+			}
 		}
 
 	sub list-routes( $trie )
