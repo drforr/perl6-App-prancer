@@ -171,12 +171,14 @@ my class Route-Info { };
 		my $deepest-array;
 		for @path -> $element
 			{
-			$deepest-array = $rv.{'/'}.{'#(Array)'} if
-				$rv.{'/'}.{'#(Array)'};
+			if $rv.{'/'}.{'#(Array)'}
+				{
+				$deepest-array = $rv.{'/'}.{'#(Array)'}
+				}
 			$rv = find-element( $rv.{'/'}, $element );
 			last unless $rv;
 			}
-		unless $rv
+		if !$rv or ( $rv.{'/'} and $rv.keys == 1 )
 			{
 			$rv = $deepest-array if $deepest-array;
 			}

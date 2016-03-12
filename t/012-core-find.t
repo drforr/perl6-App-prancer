@@ -2,7 +2,7 @@ use v6;
 use Test;
 use App::Prancer::Core;
 
-plan 7;
+plan 8;
 
 subtest sub
 	{
@@ -958,7 +958,6 @@ subtest sub
 	},
 	q{Fallback to '/#(Str)'};
 
-#`(
 subtest sub
 	{
 	plan 4;
@@ -974,7 +973,6 @@ subtest sub
 	is $r.find( 'GET', '/a/b/c/d' ), 2, q{Find '/a/b/c/d'};
 	},
 	q{Array vs. a literal route};
-)
 
 #subtest sub
 #	{
