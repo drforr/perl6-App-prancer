@@ -125,16 +125,18 @@ suite.
 
 =end pod
 
+use Crust::Runner;
 use Crust::MIME;
 use App::Prancer::Core;
+use App::Prancer::StateMachine;
 
 #my $uri = URI.new( "$env.<p6sgi.url-scheme>://$env.<REMOTE_HOST>$env.<PATH_INFO>?$env.<QUERY_STRING>" );
 
-constant STATIC-DIRECTORY = 'static';
-constant HTTP-REQUEST-METHODS =
-	<DELETE GET HEAD OPTIONS PATCH POST PUT>;
+#constant HTTP-REQUEST-METHODS =
+#	<DELETE GET HEAD OPTIONS PATCH POST PUT>;
 
 our $PRANCER-INTERNAL-ROUTES = App::Prancer::Core.new;
+our $PRANCER-STATE-MACHINE = App::Prancer::StateMachine.new;
 
 sub routine-to-route( Routine $r )
 	{
@@ -169,6 +171,8 @@ sub param-to-string( $param )
 my class Route-Info
 	{
 	has Routine $.r;
+	has @.args;
+	has %.map;
 	}
 
 multi sub trait_mod:<is>( Routine $r, :$route! ) is export(:testing,:ALL)
@@ -180,55 +184,100 @@ multi sub trait_mod:<is>( Routine $r, :$route! ) is export(:testing,:ALL)
 	my $path  = @names.join('');
 	my @path  = grep { $_ ne '' }, map { ~$_ }, $path.split(/\//, :v);
 
-	$PRANCER-INTERNAL-ROUTES.add(
-		$name, 
-		Route-Info.new(:r($r)), # XXX For expansion purposes
-		@path
-		);
+	my @map;
+	loop ( my $i = 0 ; $i < @names.elems; $i++ )
+		{
+		@map.push($i) if @names[$i] ~~ /^\#/
+		}
+	my %map;
+	if @map
+		{
+		loop ( my $j = 0 ; $j < @path.elems; $j++ )
+			{
+			next unless @path[$j] ~~ /^\#/;
+			%map{@map.shift} = $j;
+			}
+		}
+	my $info = Route-Info.new( :r( $r ), :args( @names ), :map( %map ) );
+
+	$PRANCER-INTERNAL-ROUTES.add( $name, $info, @path );
 	}
 
+# XXX Assign relative path correctly
+constant ABSOLUT-KITTEH = "/home/jgoff/Repositories/perl6-App-prancer/Basic-Blog/response-kittehs";
+constant STATIC-DIRECTORY = "/home/jgoff/Repositories/perl6-App-prancer/Basic-Blog/static";
 sub app( $env ) is export(:testing,:ALL)
 	{
-	my $response-code = 200;
-	my $MIME-type     = 'text/HTML';
-	my @header;
-	my @content       = '';
-	my $file          = STATIC-DIRECTORY ~ $env.<PATH_INFO>;
-
-	if $file.IO.e and not $file.IO.d
+	my $request-method = $env.<REQUEST_METHOD>;
+	my @path;
+	for $env.<PATH_INFO>.split(/\//, :v) -> $x
 		{
-		$response-code = 200;
-		$MIME-type     = Crust::MIME.mime-type( $file );
-		@content       = ( $file.IO.slurp );
+		next if $x eq '';
+		my $foo = $x;
+
+		if $x ~~ Match
+			{ $foo = ~$x }
+		elsif $x ~~ /^'-'?\d+/
+			{ $foo = +$x }
+
+		@path.append( $foo )
+		}
+	my $info = $PRANCER-INTERNAL-ROUTES.find(
+			$request-method, $env.<PATH_INFO> );
+
+	if $info
+		{
+		my @args = $info.args;
+		for $info.map.keys -> $arg
+			{
+			@args[$arg] = @path[$info.map.{$arg}]
+			}
+		my $content = $info.r.( |@args );
+		return 200,
+			[ 'Content-Type' => 'text/html' ],
+			[ $content ]
 		}
 	else
 		{
-		my $request-method = $env.<REQUEST_METHOD>;
-		my @path;
-		for $env.<PATH_INFO>.split(/\//, :v) -> $x
+		my $file   = STATIC-DIRECTORY ~ $env.<PATH_INFO>;
+		my $MIME-type;
+		my @content;
+		if $file.IO.e
 			{
-			next if $x eq '';
-			my $foo = $x;
-
-			if $x ~~ Match
-				{ $foo = ~$x }
-			elsif $x ~~ /^'-'?\d+/
-				{ $foo = +$x }
-
-			@path.append( $foo )
+			$MIME-type = Crust::MIME.mime-type( $file );
+			if $MIME-type ~~ /text/
+				{
+				@content = ( $file.IO.slurp );
+				}
+			else
+				{
+				@content = ( $file.IO.slurp :bin );
+				}
+			return 200,
+				[ 'Content-type' => $MIME-type ],
+				[ @content ];
 			}
-		my $info = $PRANCER-INTERNAL-ROUTES.find(
-				$request-method, $env.<PATH_INFO> );
-		@content = $info.r.( |@path );
+		else
+			{
+			my $response-code = $PRANCER-STATE-MACHINE.run($env);
+			if $response-code != 200
+				{
+				my $kitteh = ABSOLUT-KITTEH ~
+					"/$response-code.jpg";
+				return 200,
+					[ 'Content-Type' => 'image/jpeg' ],
+					[ $kitteh.IO.slurp :bin ];
+				}
+			}
 		}
-
-	return	$response-code,
-		[ 'Content-Type' => $MIME-type, @header ],
-		[ @content ];
 	}
 
 sub prance() is export
 	{
 	my $runner = Crust::Runner.new;
+
+	# Tell the state machine that the service is available.
+	#
+	$PRANCER-STATE-MACHINE.make-available;
 	$runner.run( &app )
 	}
