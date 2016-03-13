@@ -161,40 +161,34 @@ my class Route-Info { };
 		return False;
 		}
 
-	method find( Str $method, Str:D $URL )
+	sub find-exact( $trie, Str:D $URL )
 		{
-		my $trie = $.routes.{$method};
-		return False unless $trie and $URL and $URL ~~ /^\//;
-
 		my @path = grep { $_ ne '' }, $URL.split( /\// );
 		my $rv = $trie;
-		my $deepest-array;
+
 		for @path -> $element
 			{
-			if $rv.{'/'}.{'#(Array)'}
-				{
-				$deepest-array = $rv.{'/'}.{'#(Array)'}
-				}
 			$rv = find-element( $rv.{'/'}, $element );
 			last unless $rv;
 			}
 
-		# If we couldn't find a match, or we ran out of elements before
-		# running out of trie, then check the array.
-		#
-		if !$rv or ( $rv.{'/'} and $rv.keys == 1 )
-			{
-			$rv = $deepest-array if $deepest-array;
-			}
-
 		if $URL ~~ m{\/$}
 			{
-			return $rv.{'/'}.{''} if $rv.{'/'}.{''};
+			return $rv.{'/'}.{''} if $rv.{'/'}.{''}
 			}
 		else
 			{
 			return $rv.{''} if $rv.{''}
 			}
+		}
+
+	method find( Str $method, Str:D $URL )
+		{
+		my $trie = $.routes.{$method};
+		return False unless $trie and $URL and $URL ~~ /^\//;
+
+		my $exact = find-exact( $trie, $URL );
+		return $exact if $exact;
 		}
 
 	sub list-routes( $trie )
