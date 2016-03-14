@@ -149,6 +149,8 @@ sub routine-to-route( Routine $r )
 		if $param.name { $rv = '#(' ~ $param.type.perl ~ ')' }
 		else           { $rv = param-to-string( $param ) }
 
+		$rv ~= ":{$param.name}" if $param.optional;
+
 		@parameters.append( $rv );
 		}
 
@@ -201,7 +203,8 @@ multi sub trait_mod:<is>( Routine $r, :$route! ) is export(:testing,:ALL)
 	{
 	my $name  = $r.name;
 	my @names = routine-to-route( $r );
-	my $path  = @names.join('');
+	my $path  = @names.join('/');
+	$path ~~ s:g/\/+/\//;
 	my @path  = grep { $_ ne '' }, map { ~$_ }, $path.split(/\//, :v);
 
 	my %map = URL-to-route-map( @names );
@@ -213,10 +216,15 @@ multi sub trait_mod:<is>( Routine $r, :$route! ) is export(:testing,:ALL)
 # XXX Assign relative path correctly
 constant ABSOLUT-KITTEH = "/home/jgoff/Repositories/perl6-App-prancer/Basic-Blog/response-kittehs";
 constant STATIC-DIRECTORY = "/home/jgoff/Repositories/perl6-App-prancer/Basic-Blog/static";
+
+use Crust::Request;
+
 sub app( $env ) is export(:testing,:ALL)
 	{
+	my $req = Crust::Request.new($env);
+#say $req.query-parameters.<max-results>;#.<max-results>;
 	my $request-method = $env.<REQUEST_METHOD>;
-say "$env.<REQUEST_METHOD> $env.<PATH_INFO>";
+say "$env.<REQUEST_METHOD> $env.<PATH_INFO>?$env.<QUERY_STRING>";
 	my @path;
 	for $env.<PATH_INFO>.split(/\//, :v) -> $x
 		{
