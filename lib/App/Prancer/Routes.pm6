@@ -175,29 +175,36 @@ my class Route-Info
 	has %.map;
 	}
 
+sub URL-to-route-map( @names )
+	{
+	my $strung = '/' ~ @names.join( '/' );
+	$strung ~~ s:g/\/+/\//;
+	my %map;
+	my @canon = grep { $_ ne '' }, map { ~$_ }, $strung.split( /\//, :v );
+	my @value;
+	for ^@names.elems -> $value
+		{
+		@value.push( $value ) if @names[$value] ~~ /^\#/
+		}
+	for ^@canon.elems -> $key
+		{
+		if @canon[$key] ~~ /^\#/
+			{
+			%map{$key} = shift @value
+			}
+		}
+
+	return %map
+	}
+
 multi sub trait_mod:<is>( Routine $r, :$route! ) is export(:testing,:ALL)
 	{
-	my $name      = $r.name;
-	my $signature = $r.signature;
-
+	my $name  = $r.name;
 	my @names = routine-to-route( $r );
 	my $path  = @names.join('');
 	my @path  = grep { $_ ne '' }, map { ~$_ }, $path.split(/\//, :v);
 
-	my @map;
-	loop ( my $i = 0 ; $i < @names.elems; $i++ )
-		{
-		@map.push($i) if @names[$i] ~~ /^\#/
-		}
-	my %map;
-	if @map
-		{
-		loop ( my $j = 0 ; $j < @path.elems; $j++ )
-			{
-			next unless @path[$j] ~~ /^\#/;
-			%map{@map.shift} = $j;
-			}
-		}
+	my %map = URL-to-route-map( @names );
 	my $info = Route-Info.new( :r( $r ), :args( @names ), :map( %map ) );
 
 	$PRANCER-INTERNAL-ROUTES.add( $name, $info, @path );
@@ -209,6 +216,7 @@ constant STATIC-DIRECTORY = "/home/jgoff/Repositories/perl6-App-prancer/Basic-Bl
 sub app( $env ) is export(:testing,:ALL)
 	{
 	my $request-method = $env.<REQUEST_METHOD>;
+say "$env.<REQUEST_METHOD> $env.<PATH_INFO>";
 	my @path;
 	for $env.<PATH_INFO>.split(/\//, :v) -> $x
 		{
@@ -222,6 +230,7 @@ sub app( $env ) is export(:testing,:ALL)
 
 		@path.append( $foo )
 		}
+
 	my $info = $PRANCER-INTERNAL-ROUTES.find(
 			$request-method, $env.<PATH_INFO> );
 
@@ -230,7 +239,7 @@ sub app( $env ) is export(:testing,:ALL)
 		my @args = $info.args;
 		for $info.map.keys -> $arg
 			{
-			@args[$arg] = @path[$info.map.{$arg}]
+			@args[$info.map.{$arg}] = @path[$arg]
 			}
 		my $content = $info.r.( |@args );
 		return 200,
