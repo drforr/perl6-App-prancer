@@ -283,10 +283,14 @@ say "$env.<REQUEST_METHOD> $env.<PATH_INFO>?$env.<QUERY_STRING>";
 					}
 				@optional-args.push( $name => $value );
 				}
-			@args.append( %(@optional-args) );
+	
+			@content = $info.r.( |@args, |%(@optional-args) );
+			}
+		else
+			{
+			@content = $info.r.( |@args );
 			}
 
-		@content = $info.r.( |@args );
 		%header<Content-Type> = 'text/html';
 		}
 	else
