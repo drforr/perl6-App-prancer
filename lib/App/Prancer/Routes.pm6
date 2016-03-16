@@ -235,7 +235,8 @@ use Crust::Request;
 
 sub app( $env ) is export(:testing,:ALL)
 	{
-	my $req = Crust::Request.new($env);
+	my ( @content, %header );
+	my $req            = Crust::Request.new($env);
 	my $request-method = $env.<REQUEST_METHOD>;
 say "$env.<REQUEST_METHOD> $env.<PATH_INFO>?$env.<QUERY_STRING>";
 	my @path;
@@ -262,11 +263,10 @@ say "$env.<REQUEST_METHOD> $env.<PATH_INFO>?$env.<QUERY_STRING>";
 			{
 			@args[$info.map.{$arg}] = @path[$arg]
 			}
-		my $content;
+
 		if $env.<QUERY_STRING> ne '' and $info.optional-args.elems
 			{
-			my @foo = @args;
-			my @z;
+			my @optional-args;
 
 			for $info.optional-args -> $optional
 				{
@@ -281,27 +281,20 @@ say "$env.<REQUEST_METHOD> $env.<PATH_INFO>?$env.<QUERY_STRING>";
 					{
 					$value = +$req.query-parameters.{$1};
 					}
-				@z.push( $name => $value );
+				@optional-args.push( $name => $value );
 				}
-			$content = $info.r.( |@foo, |%(@z) );
-			}
-		else
-			{
-			$content = $info.r.( |@args );
+			@args.append( %(@optional-args) );
 			}
 
-		return 200,
-			[ 'Content-Type' => 'text/html' ],
-			[ $content ]
+		@content = $info.r.( |@args );
+		%header<Content-Type> = 'text/html';
 		}
 	else
 		{
 		my $file   = STATIC-DIRECTORY ~ $env.<PATH_INFO>;
-		my $MIME-type;
-		my @content;
 		if $file.IO.e
 			{
-			$MIME-type = Crust::MIME.mime-type( $file );
+			my $MIME-type = Crust::MIME.mime-type( $file );
 			if $MIME-type ~~ /text/
 				{
 				@content = ( $file.IO.slurp );
@@ -310,23 +303,23 @@ say "$env.<REQUEST_METHOD> $env.<PATH_INFO>?$env.<QUERY_STRING>";
 				{
 				@content = ( $file.IO.slurp :bin );
 				}
-			return 200,
-				[ 'Content-type' => $MIME-type ],
-				[ @content ];
+
+			%header<Content-Type> = $MIME-type;
 			}
 		else
 			{
 			my $response-code = $PRANCER-STATE-MACHINE.run($env);
-			if $response-code != 200
+			unless $response-code == 200
 				{
 				my $kitteh = ABSOLUT-KITTEH ~
 					"/$response-code.jpg";
-				return 200,
-					[ 'Content-Type' => 'image/jpeg' ],
-					[ $kitteh.IO.slurp :bin ];
+				@content = $kitteh.IO.slurp :bin;
+				%header<Content-Type> = 'image/jpeg';
 				}
 			}
 		}
+
+	return 200, [ %header ], [ @content ]
 	}
 
 sub display() is export(:testing)
