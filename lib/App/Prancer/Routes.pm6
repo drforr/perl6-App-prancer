@@ -174,6 +174,7 @@ my class Route-Info
 	{
 	has Routine $.r;
 	has @.args;
+	has @.optional-args;
 	has %.map;
 	}
 
@@ -203,12 +204,25 @@ multi sub trait_mod:<is>( Routine $r, :$route! ) is export(:testing,:ALL)
 	{
 	my $name  = $r.name;
 	my @names = routine-to-route( $r );
+@names = grep { $_ !~~ /\:/ }, @names;
 	my $path  = @names.join('/');
 	$path ~~ s:g/\/+/\//;
 	my @path  = grep { $_ ne '' }, map { ~$_ }, $path.split(/\//, :v);
 
 	my %map = URL-to-route-map( @names );
-	my $info = Route-Info.new( :r( $r ), :args( @names ), :map( %map ) );
+	my @optional;
+	for $r.signature.params -> $param
+		{
+		next unless $param.optional;
+		$param.name ~~ /^\$(.+)/;
+		@optional.push( '#(' ~ $param.type.^name ~ '):' ~ $param.name )
+		}
+	my $info = Route-Info.new(
+		:r( $r ),
+		:args( @names ),
+		:map( %map ),
+		:optional-args( @optional )
+	);
 
 	$PRANCER-INTERNAL-ROUTES.add( $name, $info, @path );
 	}
@@ -222,7 +236,6 @@ use Crust::Request;
 sub app( $env ) is export(:testing,:ALL)
 	{
 	my $req = Crust::Request.new($env);
-#say $req.query-parameters.<max-results>;#.<max-results>;
 	my $request-method = $env.<REQUEST_METHOD>;
 say "$env.<REQUEST_METHOD> $env.<PATH_INFO>?$env.<QUERY_STRING>";
 	my @path;
@@ -249,7 +262,34 @@ say "$env.<REQUEST_METHOD> $env.<PATH_INFO>?$env.<QUERY_STRING>";
 			{
 			@args[$info.map.{$arg}] = @path[$arg]
 			}
-		my $content = $info.r.( |@args );
+		my $content;
+		if $env.<QUERY_STRING> ne '' and $info.optional-args.elems
+			{
+			my @foo = @args;
+			my @z;
+
+			for $info.optional-args -> $optional
+				{
+				$optional ~~ /^\#\((.+)\)\:\$(.+)/;
+				my $name = $1;
+				my $value;
+				if $0 eq 'Str'
+					{
+					$value = ~$req.query-parameters.{$1};
+					}
+				elsif $0 eq 'Int'
+					{
+					$value = +$req.query-parameters.{$1};
+					}
+				@z.push( $name => $value );
+				}
+			$content = $info.r.( |@foo, |%(@z) );
+			}
+		else
+			{
+			$content = $info.r.( |@args );
+			}
+
 		return 200,
 			[ 'Content-Type' => 'text/html' ],
 			[ $content ]
@@ -289,9 +329,19 @@ say "$env.<REQUEST_METHOD> $env.<PATH_INFO>?$env.<QUERY_STRING>";
 		}
 	}
 
+sub display() is export(:testing)
+	{
+	for $PRANCER-INTERNAL-ROUTES.available -> $method
+		{
+		say "$method:";
+		.say for map { "  $_" }, $PRANCER-INTERNAL-ROUTES.list( $method );
+		}
+	}
+
 sub prance() is export
 	{
 	my $runner = Crust::Runner.new;
+	display if %*ENV<PRANCER-VERBOSE>;
 
 	# Tell the state machine that the service is available.
 	#

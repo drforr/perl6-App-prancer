@@ -12,6 +12,7 @@ Insert, display and search for application routes.
     $routes.add( 'GET', 1, '/', 'a' );
     $routes.add( 'GET', 2, '/', Str );
     say $routes.find( 'GET', '/a' ); # 1
+    say $routes.available; # GET
     say $routes.list( 'GET' );
 
 =head1 Documentation
@@ -212,5 +213,10 @@ my class Route-Info { };
 	method list( Str $method )
 		{
 		return list-routes( $.routes.{$method} );
+		}
+
+	method available( )
+		{
+		return $.routes.keys.sort;
 		}
 	}
