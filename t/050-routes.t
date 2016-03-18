@@ -56,8 +56,8 @@ test-psgi
 			q{GET /2016/02/regression-2.html};
 		is content-from( $cb, 'GET',
 				 '/regression-3?updated-min=2016-01-01T00:00:00+02:00&updated-max=2017-01-01T00:00:00+02:00&max-results=6' ),
-			q{GET /regression-3?updated-min=2016-01-01T00:00:00%2B02:00&updated-max=2017-01-01T00:00:00%2B02:00&max-results=6 HTTP/1.1 OK},
-			q{GET /regression-3?updated-min=2016-01-01T00:00:00%2B02:00&updated-max=2017-01-01T00:00:00%2B02:00&max-results=6 HTTP/1.1 OK};
+			q{GET /regression-3?updated-min=2016-01-01T00:00:00+02:00&updated-max=2017-01-01T00:00:00+02:00&max-results=6 HTTP/1.1 OK},
+			q{GET /regression-3?updated-min=2016-01-01T00:00:00+02:00&updated-max=2017-01-01T00:00:00+02:00&max-results=6 HTTP/1.1 OK};
 		},
 	app => &app;
 

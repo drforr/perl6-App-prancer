@@ -201,7 +201,7 @@ sub URL-to-route-map( @names )
 	return %map
 	}
 
-multi sub trait_mod:<is>( Routine $r, :$route! ) is export(:testing,:ALL)
+multi sub trait_mod:<is>( Routine $r, :$route! ) is export(:testing,:MANDATORY)
 	{
 	my $name  = $r.name;
 	my @names = routine-to-route( $r );
@@ -230,7 +230,7 @@ multi sub trait_mod:<is>( Routine $r, :$route! ) is export(:testing,:ALL)
 
 # XXX Assign relative path correctly
 constant ABSOLUT-KITTEH = "/home/jgoff/Repositories/perl6-App-prancer/Basic-Blog/response-kittehs";
-constant STATIC-DIRECTORY = "/home/jgoff/Repositories/perl6-App-prancer/Basic-Blog/static";
+constant STATIC-DIRECTORY = "/home/jgoff/Repositories/perl6-App-prancer/theperlfisher.blogspot.ro/static";
 
 use Crust::Request;
 
