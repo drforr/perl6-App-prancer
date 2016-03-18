@@ -85,7 +85,7 @@ argument.
 
     POST /post HTTP/1.1 [slug=value, id=value]
     multi POST( 'post' ) is route
-      { return "/post/?slug=$BODY.<slug>\&id=$BODY.<id>" }
+      { return "/post/?slug=$*BODY.<slug>\&id=$*BODY.<id>" }
 
 =head2 Cookies
 
@@ -136,20 +136,19 @@ use App::Prancer::StateMachine;
 #	<DELETE GET HEAD OPTIONS PATCH POST PUT>;
 
 our $PRANCER-INTERNAL-ROUTES = App::Prancer::Core.new;
-our $PRANCER-STATE-MACHINE = App::Prancer::StateMachine.new;
+our $PRANCER-STATE-MACHINE   = App::Prancer::StateMachine.new;
 
 sub routine-to-route( Routine $r )
 	{
-	my $signature = $r.signature;
 	my @parameters;
 
-	for $signature.params -> $param
+	for $r.signature.params -> $param
 		{
+		next if $param.optional;
+
 		my $rv;
 		if $param.name { $rv = '#(' ~ $param.type.perl ~ ')' }
 		else           { $rv = param-to-string( $param ) }
-
-		$rv ~= ":{$param.name}" if $param.optional;
 
 		@parameters.append( $rv );
 		}
@@ -187,14 +186,16 @@ sub URL-to-route-map( @names )
 	my @value;
 	for ^@names.elems -> $value
 		{
-		@value.push( $value ) if @names[$value] ~~ /^\#/
+		next unless @names[$value] ~~ /^\#/;
+
+		@value.push( $value )
 		}
+
 	for ^@canon.elems -> $key
 		{
-		if @canon[$key] ~~ /^\#/
-			{
-			%map{$key} = shift @value
-			}
+		next unless @canon[$key] ~~ /^\#/;
+
+		%map{$key} = shift @value
 		}
 
 	return %map
@@ -204,7 +205,6 @@ multi sub trait_mod:<is>( Routine $r, :$route! ) is export(:testing,:ALL)
 	{
 	my $name  = $r.name;
 	my @names = routine-to-route( $r );
-@names = grep { $_ !~~ /\:/ }, @names;
 	my $path  = @names.join('/');
 	$path ~~ s:g/\/+/\//;
 	my @path  = grep { $_ ne '' }, map { ~$_ }, $path.split(/\//, :v);
@@ -217,6 +217,7 @@ multi sub trait_mod:<is>( Routine $r, :$route! ) is export(:testing,:ALL)
 		$param.name ~~ /^\$(.+)/;
 		@optional.push( '#(' ~ $param.type.^name ~ '):' ~ $param.name )
 		}
+
 	my $info = Route-Info.new(
 		:r( $r ),
 		:args( @names ),
@@ -238,7 +239,8 @@ sub app( $env ) is export(:testing,:ALL)
 	my ( @content, %header );
 	my $req            = Crust::Request.new($env);
 	my $request-method = $env.<REQUEST_METHOD>;
-say "$env.<REQUEST_METHOD> $env.<PATH_INFO>?$env.<QUERY_STRING>";
+	say "$env.<REQUEST_METHOD> $env.<PATH_INFO>?$env.<QUERY_STRING>"
+		if %*ENV<PRANCER-TRACE>;
 	my @path;
 	for $env.<PATH_INFO>.split(/\//, :v) -> $x
 		{
