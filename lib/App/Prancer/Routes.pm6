@@ -128,6 +128,7 @@ suite.
 use Crust::Runner;
 use Crust::MIME;
 use App::Prancer::Core;
+use App::Prancer::Sessions;
 use App::Prancer::StateMachine;
 
 #my $uri = URI.new( "$env.<p6sgi.url-scheme>://$env.<REMOTE_HOST>$env.<PATH_INFO>?$env.<QUERY_STRING>" );
@@ -135,8 +136,9 @@ use App::Prancer::StateMachine;
 #constant HTTP-REQUEST-METHODS =
 #	<DELETE GET HEAD OPTIONS PATCH POST PUT>;
 
-our $PRANCER-INTERNAL-ROUTES = App::Prancer::Core.new;
-our $PRANCER-STATE-MACHINE   = App::Prancer::StateMachine.new;
+our $PRANCER-INTERNAL-ROUTES   = App::Prancer::Core.new;
+our $PRANCER-INTERNAL-SESSIONS = App::Prancer::Sessions.new;
+our $PRANCER-STATE-MACHINE     = App::Prancer::StateMachine.new;
 
 sub routine-to-route( Routine $r )
 	{
@@ -233,6 +235,29 @@ constant ABSOLUT-KITTEH = "/home/jgoff/Repositories/perl6-App-prancer/Basic-Blog
 constant STATIC-DIRECTORY = "/home/jgoff/Repositories/perl6-App-prancer/theperlfisher.blogspot.ro/static";
 
 use Crust::Request;
+use Cookie::Baker;
+
+sub make-optional-args( $info, $req )
+	{
+	my @optional-args;
+
+	for $info.optional-args -> $optional
+		{
+		$optional ~~ /^\#\((.+)\)\:\$(.+)/;
+		my $name = $1;
+		my $value;
+		if $0 eq 'Str'
+			{
+			$value = ~$req.query-parameters.{$1};
+			}
+		elsif $0 eq 'Int'
+			{
+			$value = +$req.query-parameters.{$1};
+			}
+		@optional-args.push( $name => $value );
+		}
+	return @optional-args
+	}
 
 sub app( $env ) is export(:testing,:ALL)
 	{
@@ -266,26 +291,25 @@ sub app( $env ) is export(:testing,:ALL)
 			@args[$info.map.{$arg}] = @path[$arg]
 			}
 
+my $*PRANCER-SESSION;
+my %cookies;
+if $env.<HTTP_COOKIE>
+	{
+	%cookies = crush-cookie( $env.<HTTP_COOKIE> );
+	if %cookies<session>
+		{
+say %cookies<session>;
+say $PRANCER-INTERNAL-SESSIONS.perl;
+#		$*PRANCER-SESSION =
+#			$PRANCER-INTERNAL-SESSIONS.find(
+#				%cookies<session> );
+		}
+	}
+
 		if $env.<QUERY_STRING> ne '' and $info.optional-args.elems
 			{
-			my @optional-args;
+			my @optional-args = make-optional-args( $info, $req );
 
-			for $info.optional-args -> $optional
-				{
-				$optional ~~ /^\#\((.+)\)\:\$(.+)/;
-				my $name = $1;
-				my $value;
-				if $0 eq 'Str'
-					{
-					$value = ~$req.query-parameters.{$1};
-					}
-				elsif $0 eq 'Int'
-					{
-					$value = +$req.query-parameters.{$1};
-					}
-				@optional-args.push( $name => $value );
-				}
-	
 			@content = $info.r.( |@args, |%(@optional-args) );
 			}
 		else
@@ -293,11 +317,31 @@ sub app( $env ) is export(:testing,:ALL)
 			@content = $info.r.( |@args );
 			}
 
+say $env.<HTTP_COOKIE>;
+if $*PRANCER-SESSION.keys
+	{
+	my $cookie;
+	if %cookies<session>
+		{
+		my $current-id = %cookies<session>;
+		$PRANCER-INTERNAL-SESSIONS.set(
+			$current-id, $*PRANCER-SESSION.perl );
+		}
+	else
+		{
+		my $new-id =
+			$PRANCER-INTERNAL-SESSIONS.add(
+				$*PRANCER-SESSION.perl );
+		$cookie = bake-cookie('session', $new-id );
+		%header<Set-Cookie> = $cookie;
+		}
+	}
+
 		%header<Content-Type> = 'text/html';
 		}
 	else
 		{
-		my $file   = STATIC-DIRECTORY ~ $env.<PATH_INFO>;
+		my $file = STATIC-DIRECTORY ~ $env.<PATH_INFO>;
 		if $file.IO.e
 			{
 			my $MIME-type = Crust::MIME.mime-type( $file );

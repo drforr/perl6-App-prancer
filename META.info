@@ -20,11 +20,15 @@
 		"panda"
 	],
 	"provides"      : {
-		"Prancer"	: "lib/Prancer.pm"
+		"App::Prancer::Core"	: "lib/App/Prancer/Core.pm6"
+		"App::Prancer::Routes"	: "lib/App/Prancer/Routes.pm6"
+		"App::Prancer::Sessions"	: "lib/App/Prancer/Sessions.pm6"
 	},
 	"depends"       : [
-		"URI"
-		"Crust"
+		"Cookie::Baker",
+		"Crust",
+		"Digest::HMAC",
+		"Digest::SHA"
 	],
 	"test-depends"  : [
 		"Test"
