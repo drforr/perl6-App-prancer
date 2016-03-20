@@ -231,7 +231,7 @@ multi sub trait_mod:<is>( Routine $r, :$route! ) is export(:testing,:MANDATORY)
 	}
 
 # XXX Assign relative path correctly
-constant ABSOLUT-KITTEH = "/home/jgoff/Repositories/perl6-App-prancer/Basic-Blog/response-kittehs";
+constant ABSOLUT-KITTEH = "/home/jgoff/Repositories/perl6-App-prancer/theperlfisher.blogspot.ro/response-kittehs";
 constant STATIC-DIRECTORY = "/home/jgoff/Repositories/perl6-App-prancer/theperlfisher.blogspot.ro/static";
 
 use Crust::Request;
@@ -291,20 +291,18 @@ sub app( $env ) is export(:testing,:ALL)
 			@args[$info.map.{$arg}] = @path[$arg]
 			}
 
-my $*PRANCER-SESSION;
-my %cookies;
-if $env.<HTTP_COOKIE>
-	{
-	%cookies = crush-cookie( $env.<HTTP_COOKIE> );
-	if %cookies<session>
-		{
-say %cookies<session>;
-say $PRANCER-INTERNAL-SESSIONS.perl;
-#		$*PRANCER-SESSION =
-#			$PRANCER-INTERNAL-SESSIONS.find(
-#				%cookies<session> );
-		}
-	}
+		my $*PRANCER-SESSION;
+		my %cookies;
+		if $env.<HTTP_COOKIE>
+			{
+			%cookies = crush-cookie( $env.<HTTP_COOKIE> );
+			if %cookies<session>
+				{
+				$*PRANCER-SESSION =
+					$PRANCER-INTERNAL-SESSIONS.find(
+						%cookies<session> );
+				}
+			}
 
 		if $env.<QUERY_STRING> ne '' and $info.optional-args.elems
 			{
@@ -317,25 +315,24 @@ say $PRANCER-INTERNAL-SESSIONS.perl;
 			@content = $info.r.( |@args );
 			}
 
-say $env.<HTTP_COOKIE>;
-if $*PRANCER-SESSION.keys
-	{
-	my $cookie;
-	if %cookies<session>
-		{
-		my $current-id = %cookies<session>;
-		$PRANCER-INTERNAL-SESSIONS.set(
-			$current-id, $*PRANCER-SESSION.perl );
-		}
-	else
-		{
-		my $new-id =
-			$PRANCER-INTERNAL-SESSIONS.add(
-				$*PRANCER-SESSION.perl );
-		$cookie = bake-cookie('session', $new-id );
-		%header<Set-Cookie> = $cookie;
-		}
-	}
+		if $*PRANCER-SESSION.defined
+			{
+			my $cookie;
+			if %cookies<session>
+				{
+				my $current-id = %cookies<session>;
+				$PRANCER-INTERNAL-SESSIONS.set(
+					$current-id, $*PRANCER-SESSION );
+				}
+			else
+				{
+				my $new-id =
+					$PRANCER-INTERNAL-SESSIONS.add(
+						$*PRANCER-SESSION );
+				$cookie = bake-cookie('session', $new-id );
+				%header<Set-Cookie> = $cookie;
+				}
+			}
 
 		%header<Content-Type> = 'text/html';
 		}
