@@ -2,27 +2,71 @@
 
 =head1 App::Prancer::Routes
 
-Lets you define your own custom route using nothing but a
-C<is route> trait.
+Lets your application respond to HTTP routes by adding just C<is route>.
 
 =head1 Synopsis
 
     use App::Prancer::Routes;
 
-    multi GET( 'posts', Int:D $page ) is route
-        { "<html><head/><body>Page $page of posts</body></html>" }
+    # Respond to GET /my-profile
+    #
+    multi GET( 'my-profile' ) is route
+        { return "<html><head/><body>My Profile</body></html>" }
+
+    # Respond to GET /posts/$page-number?format=JSON
+    #
+    multi GET( 'posts', Int $page, Str :$format ) is route
+        { if $format and $format eq 'JSON'
+              { return to-JSON( { name => 'My Post', content => '...' } ) }
+          else
+              { return "<html><head/><body>Page $page</body></html>" } }
+
+    prance();
 
 =head1 Documentation
 
-You can define HTTP/1.1 URLs as ordinary Perl 6 subroutines. Name the method
-the same as the HTTP/1.1 method you want to capture, and give the URL as the
-first argument of your subroutine. To keep clutter to a minimum, each of the
-sample route blocks will simply return an exact copy of their URL, excepting
-a few cases where we want to point out differences.
+By default, L<Prancer> serves all static content from the C<static/> directory
+inside your L<Prancer> application. If you want to serve dynamically-generated
+content, you should declare a route.
 
-    GET /posts HTTP/1.1 # can be captured as:
-    multi GET( 'posts' ) is route
-      { return "/posts" }
+Like its Perl 5 counterparts Mojolicious, Dancer and Catalyst, L<Prancer>
+lets your web application "listen to" URLs that you declare. These can be as
+simple as displaying your L<index.html> file when a browser requests the
+C<http://example.com/> URL, or as complex as performing database retrieval
+and updating after a user submits a multi-part AJAX-enabled form with JSON
+embedded in it.
+
+Unlike its Perl 5 counterparts, L<Prancer> tries not to use DSLs, instead
+relying on (at long last) the Perl 6 multi-method dispatch system. If this
+sounds scary, it shouldn't. All it really means is that instead of passing
+a string declaring your route to a C<get()> or C<post()> method, you just
+declare a function with parameters that specify the route you want to listen
+to.
+
+Most web applications have a "home" button somewhere on every page that lets
+the user return to the front page, in case they get lost. This is usually
+written in HTML as C<< <a href="http://example.com/"/> >>. When the user
+clicks on the link, it sends C<GET / HTTP/1.0 OK> to your webserver, and the
+fun begins.
+
+In order to listen to this URL and respond with content, all you need to do is
+add a single function to your file.
+
+    multi GET( '/' ) is route
+        { "<html><head><title/></head><body>Hello world!</body></html>" }
+
+Yes, it's an actual function. We use C<multi> instead of C<sub> because this
+is a real function (go ahead and call it like so: C<say GET('/');>), and more
+than likely you'll want to listen to more than one C<GET> URL.
+
+And yes, C<'/'> is a valid function parameter. It probably looks strange at
+first reading, but Perl 6 functions can take scalars, arrays, hashes B<and>
+constants as arguments, and L<Prancer> takes advantage of that.
+
+Finally, the real magic happens in C<is route>. This is how you as a programmer
+tell L<Prancer> that this function should be treated as a route that the web
+application should listen to. Without this declaration, the function will sit
+there unused.
 
 If your URL has more than one path element in them, you can use the C</>
 path separator, or list the two path elements as separate arguments.
@@ -209,10 +253,11 @@ multi sub trait_mod:<is>( Routine $r, :$route! ) is export(:testing,:MANDATORY)
 	my @names = routine-to-route( $r );
 	my $path  = @names.join('/');
 	$path ~~ s:g/\/+/\//;
-	my @path  = grep { $_ ne '' }, map { ~$_ }, $path.split(/\//, :v);
 
-	my %map = URL-to-route-map( @names );
+	my @path  = grep { $_ ne '' }, map { ~$_ }, $path.split(/\//, :v);
+	my %map   = URL-to-route-map( @names );
 	my @optional;
+
 	for $r.signature.params -> $param
 		{
 		next unless $param.optional;
@@ -261,12 +306,12 @@ sub make-optional-args( $info, $req )
 
 sub app( $env ) is export(:testing,:ALL)
 	{
-	my ( @content, %header );
+	my ( @content, %header, @path );
 	my $req            = Crust::Request.new($env);
 	my $request-method = $env.<REQUEST_METHOD>;
+
 	say "$env.<REQUEST_METHOD> $env.<PATH_INFO>?$env.<QUERY_STRING>"
 		if %*ENV<PRANCER-TRACE>;
-	my @path;
 	for $env.<PATH_INFO>.split(/\//, :v) -> $x
 		{
 		next if $x eq '';
@@ -374,7 +419,8 @@ sub display() is export(:testing)
 	for $PRANCER-INTERNAL-ROUTES.available -> $method
 		{
 		say "$method:";
-		.say for map { "  $_" }, $PRANCER-INTERNAL-ROUTES.list( $method );
+		.say for map { "  $_" },
+			$PRANCER-INTERNAL-ROUTES.list( $method );
 		}
 	}
 
