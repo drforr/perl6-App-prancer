@@ -277,7 +277,7 @@ multi sub trait_mod:<is>( Routine $r, :$route! ) is export(:testing,:MANDATORY)
 
 # XXX Assign relative path correctly
 constant ABSOLUT-KITTEH = "/home/jgoff/Repositories/perl6-App-prancer/theperlfisher.blogspot.ro/response-kittehs";
-constant STATIC-DIRECTORY = "/home/jgoff/Repositories/perl6-App-prancer/theperlfisher.blogspot.ro/static";
+constant STATIC-DIRECTORY = "static";
 
 use Crust::Request;
 use Cookie::Baker;
@@ -304,15 +304,11 @@ sub make-optional-args( $info, $req )
 	return @optional-args
 	}
 
-sub app( $env ) is export(:testing,:ALL)
+sub make-path( $path-info )
 	{
-	my ( @content, %header, @path );
-	my $req            = Crust::Request.new($env);
-	my $request-method = $env.<REQUEST_METHOD>;
+	my @path;
 
-	say "$env.<REQUEST_METHOD> $env.<PATH_INFO>?$env.<QUERY_STRING>"
-		if %*ENV<PRANCER-TRACE>;
-	for $env.<PATH_INFO>.split(/\//, :v) -> $x
+	for $path-info.split(/\//, :v) -> $x
 		{
 		next if $x eq '';
 		my $foo = $x;
@@ -324,9 +320,36 @@ sub app( $env ) is export(:testing,:ALL)
 
 		@path.append( $foo )
 		}
+	return @path;
+	}
 
+#sub error-404( $env )
+#	{
+#	my $response-code = $PRANCER-STATE-MACHINE.run($env);
+#	unless $response-code == 200
+#		{
+#		my $kitteh = ABSOLUT-KITTEH ~
+#			"/$response-code.jpg";
+#		@content = $kitteh.IO.slurp :bin;
+#		%header<Content-Type> = 'image/jpeg';
+#		}
+#	return 404;
+#	}
+
+sub app( $env ) is export(:testing,:ALL)
+	{
+	my ( $return-code, @content, %header, @path );
+	my $req            = Crust::Request.new($env);
+	my $request-method = $env.<REQUEST_METHOD>;
+
+	@path = make-path( $env.<PATH_INFO> );
+
+	my $file = STATIC-DIRECTORY ~ $env.<PATH_INFO>;
 	my $info = $PRANCER-INTERNAL-ROUTES.find(
 			$request-method, $env.<PATH_INFO> );
+
+# XXX *This* bit is what the Ruby state machine should be handling.
+# XXX "Bit", he says. Riiiight.
 
 	if $info
 		{
@@ -349,11 +372,29 @@ sub app( $env ) is export(:testing,:ALL)
 				}
 			}
 
+		my $*PRANCER-ENV = $env;
 		if $env.<QUERY_STRING> ne '' and $info.optional-args.elems
 			{
 			my @optional-args = make-optional-args( $info, $req );
 
 			@content = $info.r.( |@args, |%(@optional-args) );
+			}
+		elsif $env.<CONTENT_LENGTH> > 0
+			{
+			my @optional-args = make-optional-args( $info, $req );
+my @optional-args = [{ username => 'admin', password => 'asdf' }];
+
+my $buf = $env.<p6sgi.input>.read( $env.<CONTENT_LENGTH> );
+#say $buf.decode;
+
+if $info.optional-args.elems
+	{
+			@content = $info.r.( |@args, |%(@optional-args) );
+	}
+	else
+	{
+			@content = $info.r.( |@args );
+	}
 			}
 		else
 			{
@@ -380,38 +421,32 @@ sub app( $env ) is export(:testing,:ALL)
 			}
 
 		%header<Content-Type> = 'text/html';
+		$return-code = 200;
 		}
-	else
+	elsif $file.IO.e
 		{
-		my $file = STATIC-DIRECTORY ~ $env.<PATH_INFO>;
-		if $file.IO.e
+		my $MIME-type = Crust::MIME.mime-type( $file );
+		if $MIME-type ~~ /text/
 			{
-			my $MIME-type = Crust::MIME.mime-type( $file );
-			if $MIME-type ~~ /text/
-				{
-				@content = ( $file.IO.slurp );
-				}
-			else
-				{
-				@content = ( $file.IO.slurp :bin );
-				}
-
-			%header<Content-Type> = $MIME-type;
+			@content = ( $file.IO.slurp );
 			}
 		else
 			{
-			my $response-code = $PRANCER-STATE-MACHINE.run($env);
-			unless $response-code == 200
-				{
-				my $kitteh = ABSOLUT-KITTEH ~
-					"/$response-code.jpg";
-				@content = $kitteh.IO.slurp :bin;
-				%header<Content-Type> = 'image/jpeg';
-				}
+			@content = ( $file.IO.slurp :bin );
 			}
+
+		%header<Content-Type> = $MIME-type;
+		$return-code = 200;
+		}
+	else
+		{
+		$return-code = 404;
 		}
 
-	return 200, [ %header ], [ @content ]
+	say "$env.<REQUEST_METHOD> $env.<PATH_INFO>?$env.<QUERY_STRING> - $return-code"
+		if %*ENV<PRANCER_TRACE>;
+
+	return $return-code, [ %header ], [ @content ]
 	}
 
 sub display() is export(:testing)
@@ -427,7 +462,7 @@ sub display() is export(:testing)
 sub prance() is export
 	{
 	my $runner = Crust::Runner.new;
-	display if %*ENV<PRANCER-VERBOSE>;
+	display if %*ENV<PRANCER_VERBOSE>;
 
 	# Tell the state machine that the service is available.
 	#

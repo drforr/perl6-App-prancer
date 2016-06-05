@@ -21,9 +21,12 @@ multi GET( Int $x, '/', Int $y, '/',  'regression-2.html' ) is route
 	sprintf "GET /%04d/%02d/regression-2.html HTTP/1.1 OK", $x, $y
 	}
 
-multi GET( '/regression-3', Str :$updated-min, Str :$updated-max, Int :$max-results ) is route
+multi GET( '/regression-3',
+	   Str :$updated-min, Str :$updated-max, Int :$max-results ) is route
 	{
-	my $rest = "?updated-min=$updated-min\&updated-max=$updated-max\&max-results=$max-results";
+	my $rest = "?updated-min=$updated-min" .
+		   "\&updated-max=$updated-max" .
+		   "\&max-results=$max-results";
 	return "GET /regression-3$rest HTTP/1.1 OK";
 	}
 

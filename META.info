@@ -25,10 +25,10 @@
 		"App::Prancer::Sessions"	: "lib/App/Prancer/Sessions.pm6"
 	},
 	"depends"       : [
-		"Cookie::Baker",
-		"Crust",
+#		"Cookie::Baker",
+#		"Crust",
 		"Digest::HMAC",
-		"Digest::SHA"
+#		"Digest::SHA"
 	],
 	"test-depends"  : [
 		"Test"
