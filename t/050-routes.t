@@ -24,8 +24,8 @@ multi GET( Int $x, '/', Int $y, '/',  'regression-2.html' ) is route
 multi GET( '/regression-3',
 	   Str :$updated-min, Str :$updated-max, Int :$max-results ) is route
 	{
-	my $rest = "?updated-min=$updated-min" .
-		   "\&updated-max=$updated-max" .
+	my $rest = "?updated-min=$updated-min" ~
+		   "\&updated-max=$updated-max" ~
 		   "\&max-results=$max-results";
 	return "GET /regression-3$rest HTTP/1.1 OK";
 	}
